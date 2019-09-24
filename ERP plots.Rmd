@@ -1,0 +1,163 @@
+---
+title: "ERP Plots"
+author: "Ian Kahrilas"
+date: "9/15/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r electrode site code - change as needed}
+#Use this code to select Pz cluster electrodes
+Pz_elec <- c(paste("A", 25, sep = ""), paste("B", c(21, 22, 28), sep = ""))
+Pz_elec <- paste0("B", c(23, 24, 26))
+#This is sight of the observed right frontal activity that appears to be maximal at around 1000 ms: B2, B7, & B8
+RF_elec <- c(paste0("B", c(2, 7, 8)))
+```
+Transpose and change mv class
+```{r transposing}
+#transpose dataframe to long form for plotting
+erp_long <- gather(erp, key = "electrode", value = "mv", str_subset(names(erp), "[A-Z]"))
+#convert mv variable to numeric, since it is changed to character class by being coerced with some electrodes with all missing values that are interpreted as character
+erp_long$mv <- as.numeric(erp_long$mv)
+```
+Reduce number of data points so that plotting doesn't take so long
+```{r reduce number of points for plotting}
+#Use this for plotting - need to reduce the number of data points here so it doesn't take so long.
+avg_erp_long_LPP <- erp_long %>%
+  filter(electrode %in% Pz_elec) %>%
+  mutate(ms = round(ms, digits = -0.8)) %>%
+  group_by(block, ms) %>% 
+  summarize(mv = mean(mv, na.rm = TRUE))
+
+avg_erp_long_RF <- erp_long %>%
+  filter(electrode %in% RF_elec) %>%
+  mutate(ms = round(ms, digits = -0.8)) %>%
+  group_by(block, ms) %>% 
+  summarize(mv = mean(mv, na.rm = TRUE)) 
+```
+
+```{r electrode site again to change as needed}
+#Use this code to select Pz cluster electrodes
+Pz_elec <- c(paste("A", 25, sep = ""), paste("B", c(21, 22, 28), sep = ""))
+Pz_elec <- paste0("B", c(23, 24, 26, 27))
+#This is sight of the observed right frontal activity that appears to be maximal at around 1000 ms: B2, B7, & B8
+RF_elec <- c(paste0("B", c(2, 7, 8)))
+```
+This plots all blocks for the 300-1000 ms window
+```{r all blocks}
+ggplot(avg_erp_long_LPP, aes(ms, mv, color = block)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = 0,linetype = "dashed") +
+  geom_vline(xintercept = c(300, 1000), linetype = "solid", color = "red") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  xlim(-200, 2000) +
+  labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
+  theme_classic()
+
+# this plots all blocks for RF
+ggplot(avg_erp_long_RF, aes(ms, mv, color = block)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = 0,linetype = "dashed") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
+  theme_classic()
+```
+Publication-ready passive watch condition plot
+```{r passive watch conditions}
+avg_erp_long_LPP %>%
+  filter(block %in% c("Neg_Watch",  "Pos_Watch", "Neu_Watch"), ms <= 2000) %>%
+  ggplot(., aes(ms, mv, color = block)) +
+  geom_line(size = 1.1) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = c(400, 1000), linetype = "solid", size = 1.05) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Time (ms)", 
+       y = expression(paste("Amplitude ( ",mu,"V)")),
+       title = paste("Average ERP Waveforms across", Pz_elec[1], ",", Pz_elec[2], ",", Pz_elec[3], "&", Pz_elec[4])) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 16),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 12),
+        legend.key.size = unit(2, "line"),
+        plot.title = element_text(hjust = 0.5)) + 
+  scale_color_discrete(name = "Block Condition", 
+                       breaks = c("Neg_Watch","Pos_Watch","Neu_Watch"),
+                       labels = c("Negative Watch", "Positive Watch", "Neutral Watch")
+                       ) 
+
+# right frontal
+avg_erp_long_RF %>%
+  filter(block %in% c("Neg_Dec",  "Neg_Inc", "Neg_Watch"), ms <= 2000) %>%
+  ggplot(., aes(ms, mv, linetype = block)) +
+  geom_line(size = 1.1) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = c(900, 1100), linetype = "solid", size = 1.05) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Time (ms)",y = expression(paste("Amplitude ( ",mu,"V)"))) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 16),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 12),
+        legend.key.size = unit(2, "line")) + 
+  scale_linetype_discrete(name = "Block Condition", 
+                          breaks = c("Neg_Dec",  "Neg_Inc", "Neg_Watch"),
+                          labels = c("Negative Decrease", "Negative Increase", "Negative Watch")
+  )
+```
+Positive watch versus positive increase
+```{r positive watch vs. increase}
+avg_erp_long_LPP %>%
+  filter(block %in% c("Pos_Inc",  "Pos_Watch"), ms <= 2000) %>%
+  ggplot(., aes(ms, mv, color = block)) +
+  geom_line(size = 1.1) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = c(300, 1000), linetype = "solid", size = 1.05) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Time (ms)",y = expression(paste("Amplitude ( ",mu,"V)"))) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 16),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 12),
+        legend.key.size = unit(2, "line")) + 
+  scale_color_discrete(name = "Block Condition", 
+                          breaks = c("Pos_Watch", "Pos_Inc"),
+                          labels = c("Positive Watch", "Positive Increase")
+  )
+####This plots RF for positive conditions
+avg_erp_long_RF %>%
+  filter(block %in% c("Pos_Watch",  "Pos_Inc", "Pos_Dec"), ms <= 2000) %>%
+  ggplot(., aes(ms, mv, linetype = block)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = 0,linetype = "dashed") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
+  theme_classic() +
+  scale_linetype_discrete(name = "Block Condition", 
+                          breaks = c("Pos_Inc", "Pos_Dec", "Pos_Watch"),
+                          labels = c("Positive Increase", "Positive Decrease", "Positive Watch")
+  ) +
+  scale_y_continuous(limits = c(-4.0, 4.0))
+```
+RF for negative conditions
+```{r RF negative conditions}
+####This plots RF for negative conditions
+avg_erp_long_RF %>%
+  filter(block %in% c("Neg_Watch",  "Neg_Inc", "Neg_Dec"), ms <= 2000) %>%
+  ggplot(., aes(ms, mv, linetype = block)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = 0,linetype = "dashed") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
+  theme_classic() +
+  scale_linetype_discrete(name = "Block Condition", 
+                          breaks = c("Neg_Dec", "Neg_Inc", "Neg_Watch"),
+                          labels = c("Negative Decrease", "Negative Increase", "Negative Watch")
+  ) +
+  scale_y_continuous(limits = c(-5.0, 5.0))
+```

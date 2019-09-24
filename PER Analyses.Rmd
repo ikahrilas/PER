@@ -1,0 +1,592 @@
+---
+title: "PER Analyses"
+author: "Ian J. Kahrilas"
+date: "9/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load in tidyverse and sjPlot}
+library(tidyverse)
+library(sjPlot)
+```
+
+```{r choose electrodes to average for LPP}
+# this defines a character vector with the electrode names of interest
+Pz_elec <- paste0("B", c(23, 24, 26, 27))
+```
+
+```{r draft of electrodes with right frontal activity}
+# this is sight of the observed right frontal activity that appears to be maximal at around 1000 ms: B2, B7, & B8
+RF_elec <- c(paste0("B", c(2, 7, 8)))
+```
+
+```{r transpose data to long form for MLM analyses}
+erp_long <- gather(erp, key = "electrode", value = "mv", str_subset(names(erp), "[A-Z]"))
+erp_long$mv <- as.numeric(erp_long$mv)
+```
+
+```{r derive window average for various timecourses}
+#find early 0 - 400 ms averages for Pz electroes
+LPP_400 <- erp_long %>%
+  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 0, 400)) %>%
+  group_by(pid, block) %>%
+  summarize("0_to_400_LPP" = mean(mv, na.rm = TRUE))
+
+#find 400-1000 ms averages for Pz electrodes
+LPP_1000 <- erp_long %>%
+  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 400, 1000)) %>%
+  group_by(pid, block) %>%
+  summarize("400_to_1000_LPP" = mean(mv, na.rm = TRUE))
+
+#find 1000-2000 ms averages for Pz electrodes
+LPP_2000 <- erp_long %>%
+  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 1000, 2000)) %>%
+  group_by(pid, block) %>%
+  summarize("1000_to_2000_LPP" = mean(mv, na.rm = TRUE))
+
+#find 2000-3000 ms averages for Pz electrodes
+LPP_3000 <- erp_long %>%
+  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 2000, 3000)) %>%
+  group_by(pid, block) %>%
+  summarize("2000_to_3000_LPP" = mean(mv, na.rm = TRUE))
+```
+
+```{r draft of peak picking code for right frontal component}
+#RF peak picking code
+RF <- erp_long %>%
+  select(pid:ms, electrode, mv) %>%
+  filter(electrode %in% RF_elec, between(ms, 800, 2000)) %>% #filter dataset in the window of 800 to 2000ms, which can accomodate all participants' peaks but ends before presentaiton of next stimulus
+  group_by(pid, block, electrode) %>% 
+  mutate(rank = row_number(desc(mv))) %>% #rank cases in terms of mv (1 = greatest amplitude) for each electrode within each block within each participant.
+  filter(between(rank, 1, 5)) %>% #select the top 5 cases that have the greatest mv - this should subsume 2 timepoints before and after the peak. This may need to be revised.
+  group_by(pid, block) %>%
+  summarize("RF_peak" = mean(mv)) %>% #collapse accross electrodes and ranks to find average peak.
+  filter(RF_peak != Inf, RF_peak != -Inf)
+```
+
+Join all the tibbles together
+
+```{r join all tibbles together}
+#join all LPP tibbles plus right frontal
+LPP_total <- left_join(LPP_400, LPP_1000, by = c("pid", "block")) %>%
+  left_join(LPP_2000, by = c("pid", "block")) %>%
+  left_join(LPP_3000, by = c("pid", "block")) %>%
+  left_join(RF, by = c("pid", "block"))
+```
+Change block variable to a factor for analyses
+```{r change block to factor class variable}
+LPP_total$block <- as.factor(LPP_total$block)
+#drop the unused levels in per_int$block of "practice" and "practicewneutral" - they were automatically
+#included because of the practice trials implemented in the paradigm
+per_int$block <- droplevels(per_int$block)
+```
+
+Rename block variable levels in per_int to match the levels in the ERP data so that LPP data and questionnaire data can be merged
+
+```{r rename block conditions}
+levels(per_int$block) <- c("Neg_Dec",
+                           "Neg_Inc",
+                           "Neg_Watch",
+                           "Neu_Watch",
+                           "Pos_Dec",
+                           "Pos_Inc",
+                           "Pos_Watch")
+```
+
+Merge erp data and questionnaire data together and filter out cases where there is no ERP data.
+
+```{r merge ERP data and questionnaire data}
+per_erp <- full_join(LPP_total, per_int, by = c("pid", "block")) %>%
+  drop_na("0_to_400_LPP")
+#rename LPP 300 to 800 variable to just LPP, for some reason lmer function doesn't behave when variable names contain numbers
+per_erp <- per_erp %>% 
+  rename("LPP" = "400_to_1000_LPP")
+```
+
+Get descriptive statistics
+```{r descriptives}
+#Descriptives for arousal, valence, and difficulty
+erp_descriptives <- per_erp %>%
+  group_by(block) %>%
+  summarize("300_LPP_mean" = mean(LPP),
+            "300_LPP_sd" = sd(LPP),
+            "0_400_LPP_mean" = mean(`0_to_400_LPP`),
+            "0_400_LPP_sd" = sd(`0_to_400_LPP`),
+            "400_1000_LPP_mean" = mean(`400_to_1000_LPP`),
+            "400_1000_LPP_sd" = sd(`400_to_1000_LPP`),
+            "1000_2000_LPP_mean" = mean(`1000_to_2000_LPP`),
+            "1000_2000_LPP_sd" = sd(`1000_to_2000_LPP`),
+            "2000_3000_LPP_mean" = mean(`2000_to_3000_LPP`),
+            "2000_3000_LPP_sd" = sd(`2000_to_3000_LPP`),
+            RF_peak_mean = mean(RF_peak, na.rm = TRUE),
+            RF_peak_sd = sd(RF_peak, na.rm = TRUE),
+            arousal_mean = mean(arousal, na.rm = TRUE),
+            arousal_sd = sd(arousal, na.rm = TRUE),
+            valence_mean = mean(valence, na.rm = TRUE),
+            valence_sd = sd(valence, na.rm = TRUE),
+            difficulty_mean = mean(difficulty, na.rm = TRUE),
+            difficulty_sd = sd(difficulty, na.rm = TRUE)
+  )
+
+erp_descriptives
+```
+
+Transform block variable so that the neutral watch condition is the reference level for hypothesis 1a & 1b
+
+```{r}
+per_erp$block <- relevel(per_erp$block, "Neu_Watch")
+```
+
+Run analyses to inspect for mood manipulation effects with behavioral ratings as outcomes
+
+```{r contrasts}
+library(psycho) #package that provides contrast tables
+val_mod <- lmer(valence ~ block + (1|pid), data = per_erp)
+val_contr <- get_contrasts(val_mod, "block", adjust = "tukey")
+write.csv(val_contr$contrasts, "valence_contrasts.csv") #output the contrasts as a spreadsheet
+aro_mod <- lmer(arousal ~ block + (1|pid), data = per_erp)
+aro_contr <- get_contrasts(aro_mod, "block", adjust = "tukey")
+write.csv(aro_contr$contrasts, "arousal_contrasts.csv") #output the contrasts as a spreadsheet
+```
+Run null model first to derive between subjects variation and ICC
+```{r}
+library(lmerTest)
+library(performance)
+model_null <- lmer(LPP ~ (1|pid), data = per_erp)
+summary(model_null)
+icc(model_null)
+```
+
+
+```{r}
+#check it out for right frontal peak as well
+model_null_rf <- lmer(RF_peak ~ (1|pid), data = per_erp)
+summary(model_null_rf)
+icc(model_null_rf)
+```
+
+Task validity model
+
+```{r}
+# rename levels
+levels(per_erp$block) <- c("Neutral Watch",
+                           "Negative Decrease",
+                           "Negative Increase",
+                           "Negative Watch",
+                           "Positive Decrease",
+                           "Positive Increase",
+                           "Positive Watch")
+per_erp <- rename(per_erp, "Valence" = "valence")
+
+# rename pid to participant to make it look pretty
+per_erp <- 
+  per_erp %>% rename("Participant" = "pid")
+per_erp$block <- relevel(per_erp$block, "Neutral Watch")
+#Run random intercept model establishing task validity
+model_1 <- lmer(LPP ~ block + (1|Participant), data = per_erp)
+summary(model_1)
+confint(model_1, parm = "beta_", boot.type = "basic")
+
+#find semi-partial R2 for model parameters of interest - positive and negative watch blocks:
+print(r2beta(model_1, method = "sgv")) #use standardized generalized variance method
+
+# this prints a results table
+tab_model(model_1, show.se = TRUE, show.re.var = TRUE, show.stat = TRUE, show.df = TRUE, show.r2 = TRUE, show.icc = TRUE, show.obs = TRUE, string.ci = "95% CI", p.style = "asterisk", dv.labels = c("LPP" = "Outcome: LPP"), string.se = "SE", terms = c("block [Negative Watch, Positive Watch]"), order.terms = c(2, 1))
+```
+
+```{r}
+#right frontal peak
+model_1_rf <- lmer(RF_peak ~ block + (1|pid), data = per_erp)
+summary(model_1_rf)
+```
+
+```{r}
+#Continue establishing task validity and investigate increase/decrease conditions for positive and negative sitmuli
+#Negative stimuli
+per_erp$block <- relevel(per_erp$block, "Neg_Watch")
+model_neg <- lmer(LPP ~ block + valence + (valence|pid), data = per_erp)
+summary(model_neg)
+#find semi-partial R2 for model parameters of interest - negative decrease and increase blocks:
+r2beta(model_neg, method = "sgv") #use standardized generalized variance method
+```
+
+```{r}
+#negative stimuli right frontal
+model_neg_rf <- lmer(RF_peak ~ block + (1|pid), data = per_erp)
+summary(model_neg_rf)
+```
+
+```{r}
+#Positive stimuli
+per_erp$block <- relevel(per_erp$block, "Positive Watch")
+model_pos <- lmer(LPP ~ block + (1|pid), data = per_erp)
+summary(model_pos)
+#find semi-partial R2 for model parameters of interest - positive increase and decrease blocks:
+r2beta(model_pos, method = "sgv") #use standardized generalized variance method
+```
+
+```{r}
+#positive stimuli right frontal
+model_pos_rf <- lmer(center(RF_peak) ~ block + center(difficulty) + (center(difficulty)|pid), data = per_erp)
+summary(model_pos_rf)
+```
+
+```{r}
+# rename some variables to make the output look nice
+per_erp <- per_erp %>%
+  rename("Positive Affectivity" = "pos_affectivity")
+#Run random intercept model to test hypothesis 2a, that positive affectivity moderates rel't between POSWAT and outcome
+per_erp$block <- relevel(per_erp$block, "Neutral Watch")
+model_2a_step1 <- lmer(LPP ~ block + `Positive Affectivity` + (1|Participant), data = per_erp)
+model_2a_step2 <- lmer(LPP ~ block * `Positive Affectivity` + (1|Participant), data = per_erp)
+summary(model_2a_step2)
+
+tab_model(model_2a_step1, model_2a_step2, terms = c("block [Positive Watch]", "`Positive Affectivity`", "blockPositive Watch:`Positive Affectivity`"), pred.labels = c("`Positive Affectivity`" = "Positive Affectivity", "blockPositive Watch" = "Positive Watch", "blockPositive Watch:`Positive Affectivity`" = "Positive Watch * Positive Affectivity"), show.se = TRUE, show.re.var = TRUE, show.stat = TRUE, show.df = TRUE, show.r2 = TRUE, show.icc = FALSE, show.obs = TRUE, p.style = "asterisk", string.se = "SE", string.ci = "95% CI", dv.labels = c("LPP" = "Outcome: LPP", "LPP" = "Outcome: LPP"))
+```
+
+```{r}
+#find semi-partial R2 for model parameters of interest - positive increase*PA interaction term:
+r2beta(model_2a, method = "sgv") #use standardized generalized variance method
+```
+
+```{r}
+#right frontal
+model_2a_frontal <- lmer(center(RF_peak) ~ block * center(pos_affectivity) + (1|pid), data = per_erp)
+summary(model_2a_frontal)
+```
+
+```{r}
+#Transform proc_type variable into factor so that POSWAT is reference level for hypothesis 2b
+per_erp$block <- relevel(per_erp$block, "Positive Watch")
+
+per_erp <- per_erp %>% rename("Savoring the Moment" = "savoring_moment")
+per_erp <- per_erp %>% rename("Difficulty" = "difficulty")
+
+
+#Run random intercept model to test hypothesis 2b, that savoring the moment moderates rel't between POSINC and outcome
+model_2b_step1 <- lmer(LPP ~ block + `Savoring the Moment` + (1|Participant), data = per_erp)
+
+model_2b_step2 <- lmer(LPP ~ block * `Savoring the Moment` + (1|Participant), data = per_erp)
+
+summary(model_2b_step1)
+summary(model_2b_step2)
+
+tab_model(model_2b_step1, model_2b_step2, terms = c("block [Positive Increase]", "`Savoring the Moment`", "blockPositive Increase:`Savoring the Moment`"), pred.labels = c("`Savoring the Moment`" = "Savoring the Moment", "blockPositive Increase" = "Positive Increase", "blockPositive Increase:`Savoring the Moment`" = "Positive Increase * Savoring the Moment"), show.se = TRUE, show.re.var = TRUE, show.stat = TRUE, show.df = TRUE, show.r2 = TRUE, show.icc = FALSE, show.obs = TRUE, p.style = "asterisk", string.se = "SE", string.ci = "95% CI", dv.labels = c("LPP" = "Outcome: LPP", "LPP" = "Outcome: LPP"))
+```
+
+ggplot(per_erp, aes(block, LPP)) + 
+  geom_boxplot()
+
+
+
+#find semi-partial R2 for model parameters of interest - positive increase*StM interaction term:
+r2beta(model_2b, method = "sgv") #use standardized generalized variance method
+
+#savoring the moment right frontal
+model_2b_frontal <- lmer(center(RF_peak) ~ block * center(savoring_moment) + (1|pid), data = per_erp)
+summary(model_2b_frontal)
+
+#check out more negative conditions
+per_erp$block <- relevel(per_erp$block, "Neg_Watch")
+model_3 <- lmer(center(RF_peak) ~ block  + center(difficulty) + center(LPP) + (center(difficulty)|pid), data = per_erp)
+summary(model_3)
+
+###RESULTS TABLES
+###########################################################################################################################
+#Descriptive statitsics 
+table_1 <- per_erp %>%
+  group_by(block) %>%
+  summarize(LPP_mean = mean(LPP),
+            LPP_sd = sd(LPP),
+            arousal_mean = mean(arousal),
+            arousal_sd = sd(arousal),
+            difficulty_mean = mean(difficulty), 
+            difficulty_sd = sd(difficulty),
+            valence_mean = mean(valence),
+            valence_sd = sd(valence),
+            age_mean = mean(age), 
+            age_sd = sd(age),
+            savoring_moment_mean = mean(savoring_moment),
+            savoring_moment_sd = sd(savoring_moment),
+            pos_affectivity_mean = mean(pos_affectivity),
+            pos_affectivity_sd = sd(pos_affectivity),
+            pos_affect_mean = mean(pos_affect),
+            pos_affect_sd = sd(pos_affect)
+            )
+
+table_1.1 <- per_erp %>%
+  summarize(age_mean = mean(age),
+            age_sd = sd(age),
+            percent_female = mean(sex == 2),
+            percent_not_latino = mean(ethnicity == 1),
+            pos_affectivity_mean = mean(pos_affectivity),
+            pos_affectivity_sd = sd(pos_affectivity),
+            pos_affect_mean = mean(pos_affect),
+            pos_affect_sd = sd(pos_affect),
+            savoring_moment_mean = mean(savoring_moment),
+            savoring_moment_sd = sd(savoring_moment)
+            )
+
+#correlation table
+corr_table_tbl <- per_erp %>%
+  select(block,
+         LPP,
+         arousal,
+         difficulty,
+         valence,
+         savoring_moment, 
+         pos_affectivity,
+         pos_affect)
+
+apa.cor.table(corr_table_tbl[, -1], filename = "ijk_thesis_correlation.doc", show.conf.interval = FALSE)
+
+####UPDATED CORRELATION TABLE
+#pos_watch variables
+pos_watch <- per_erp %>%
+  filter(block == "Pos_Watch") %>%
+  select(LPP, arousal, valence) %>%
+  rename("LPP_Pos_Watch" = "LPP",
+         "arousal_Pos_Watch" = "arousal",
+         "valence_Pos_Watch" = "valence")
+#pos_inc variables
+pos_inc <- per_erp %>%
+  filter(block == "Pos_Inc") %>%
+  select(LPP, arousal, valence) %>%
+  rename("LPP_Pos_Inc" = "LPP",
+         "arousal_Pos_Inc" = "arousal",
+         "valence_Pos_Inc" = "valence")
+#neu variables
+neu_watch <- per_erp %>%
+  filter(block == "Neu_Watch") %>%
+  select(LPP, arousal, valence) %>%
+  rename("LPP_Neu_Watch" = "LPP",
+         "arousal_Neu_Watch" = "arousal",
+         "valence_Neu_Watch" = "valence")
+#neg_watch variables
+neg_watch <- per_erp %>%
+  filter(block == "Neg_Watch") %>%
+  select(LPP, arousal, valence) %>%
+  rename("LPP_Neg_Watch" = "LPP",
+         "arousal_Neg_Watch" = "arousal",
+         "valence_Neg_Watch" = "valence")
+#questionnaire measure variables
+questionnaires <- per_erp %>%
+  group_by(pid) %>%
+  summarize(pos_affectivity = mean(pos_affectivity),
+            pos_affect = mean(pos_affect),
+            anticipating = mean(anticipating),
+            savoring_moment = mean(savoring_moment),
+            reminiscing = mean(reminiscing))
+
+#join all the tbls
+corr_table_tbl <- full_join(pos_watch, pos_inc, by = "pid") %>%
+  full_join(., neg_watch, by = "pid") %>%
+  full_join(., neu_watch, by = "pid") %>%
+  full_join(., questionnaires, by = "pid")
+
+#output it in a word document
+apa.cor.table(corr_table_tbl[, -1], filename = "ijk_thesis_correlation.doc", show.conf.interval = FALSE)
+
+#define table function with preferred arguments
+lmer_table <- function(model, pred_labels, file_name) {sjt.lmer(model, show.header = FALSE, string.est = "Estimate",
+         string.ci = "95% CI", show.se = TRUE, string.se = "SE",
+         depvar.labels = "LPP", group.pred = TRUE, emph.p = TRUE, show.re.var = TRUE,
+         pred.labels = pred_labels, cell.spacing = 0.1, show.icc = FALSE, file = file_name
+)
+}
+
+#Results table for hypotheses 1a and 1b
+lmer_table(model_1, file_name = "model_1a.doc", c("Positive Watch", "Negative Watch",
+                      "Positive Decrease", "Negative Decrease", "Positive Increase",
+                      "Negative Increase", "Valence", "Difficulty"))
+
+#Results table for pos/neg inc/dec conditions
+sjt.lmer(model_neg, model_pos, show.header = FALSE, string.ci = "95% CI", show.se = TRUE, string.se = "SE",
+         depvar.labels = c("Arousal with NEGWAT as Comparison Group", "Arousal with POSWAT as Comparison Group"),
+         emph.p = TRUE, show.re.var = TRUE, cell.spacing = 0.1, show.icc = FALSE, 
+         pred.labels = c("Neutral Watch", "Positive Watch", "Positive Decrease", "Negative Decrease", 
+                         "Positive Increase", "Negative Increase", "Valence", "Difficulty",
+                         "Negative Watch"), file = "model_pa_na.doc"
+)
+
+#Results table for hypothesis 2a
+lmer_table(model_2a, file_name = "model_2a.doc", c("Neutral Watch", "Negative Watch",
+                                               "Positive Decrease", "Negative Decrease", "Positive Increase",
+                                               "Negative Increase", "PA", "S_PA", "Valence", "Difficulty",
+                                               "Positive Watch * PA", "Negative Watch * PA",
+                                               "Positive Decrease * PA", "Negative Decrease * PA", "Positive Increase * PA",
+                                               "Negative Increase * PA"))
+#Results table for hypothesis 2b
+lmer_table(model_2b, file_name = "model_2b.doc", c("Negative Decrease", "Negative Increase",
+                                                   "Negative Watch", "Neutral Watch", "Positive Decrease",
+                                                   "Positive Increase", "StM", "PA", "Valence", "Difficulty",
+                                                   "Negative Decrease * StM", "Negative Increase * StM",
+                                                   "Negative Watch * StM", "Neutral Watch * StM", "Positive Decrease * StM",
+                                                   "Positive Increase * StM"))
+
+
+#ERP PLOTTING
+#################################################################################
+###PASSIVE WATCH CONDITION COMPARISON
+#modify the erp data first so it can be plotted
+erp_long$block <- as.factor(erp_long$block)
+
+
+erp_avg <- full_join(erp_long, per_int, by = c("pid", "block"))
+
+erp_avg <- erp_long %>%
+  filter(electrode %in% Pz_elec) %>%
+  group_by(pid, block, ms, electrode) %>%
+  summarize(mv = mean(mv))
+
+
+per_erp %>%
+  filter(block %in% c("Neg_Watch",  "Pos_Watch", "Neu_Watch"), ms <= 2000) %>%
+  ggplot(., aes(ms, mv, linetype = block)) +
+  geom_line(size = 1) +
+  geom_vline(xintercept = 0,linetype = "dashed") +
+  geom_vline(xintercept = c(300, 800), linetype = "solid", color = "red") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
+  theme_classic() +
+  scale_linetype_discrete(name = "Block Condition", 
+                          breaks = c("Neg_Watch","Pos_Watch","Neu_Watch"),
+                          labels = c("Negative Watch", "Positive Watch", "Neutral watch")
+  )
+
+
+##Assessing variables for for normality
+#LPP
+ggplot(per_erp, aes(LPP)) +
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$LPP)
+skew(per_erp$LPP)
+kurtosi(per_erp$LPP)
+
+#Anticipating
+ggplot(per_erp, aes(anticipating))+
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$anticipating)
+skew(per_erp$anticipating)
+kurtosi(per_erp$anticipating)
+
+#Savoring the moment
+ggplot(per_erp, aes(savoring_moment))+
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$savoring_moment)
+skew(per_erp$savoring_moment)
+kurtosi(per_erp$savoring_moment)
+
+#Reminiscing
+ggplot(per_erp, aes(reminiscing))+
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$reminiscing)
+skew(per_erp$reminiscing)
+kurtosi(per_erp$reminiscing)
+
+#Positive affectivity
+ggplot(per_erp, aes(pos_affectivity))+
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$pos_affectivity)
+skew(per_erp$pos_affectivity)
+kurtosi(per_erp$pos_affectivity)
+
+#Positive affectivity
+ggplot(per_erp, aes(pos_affect))+
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$pos_affect)
+skew(per_erp$pos_affect)
+kurtosi(per_erp$pos_affect)
+
+#Negative affectivitty
+ggplot(per_erp, aes(neg_affectivity))+
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$neg_affectivity)
+skew(per_erp$neg_affectivity)
+kurtosi(per_erp$neg_affectivity)
+
+#reappraisal
+ggplot(per_erp, aes(erq_reappraisal))+
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$erq_reappraisal)
+skew(per_erp$erq_reappraisal)
+kurtosi(per_erp$erq_reappraisal)
+
+#suppression
+ggplot(per_erp, aes(erq_suppression))+
+  geom_density(color = "blue") + 
+  geom_histogram(aes(y = ..density..), fill = "red", alpha = 0.5)
+ggqqplot(per_erp$erq_suppression)
+skew(per_erp$erq_suppression)
+kurtosi(per_erp$erq_suppression)
+
+#Derive alpha coefficients 
+library(psych)
+#PANAS
+pos_affect <- per_erp[, c("t_panas_19", "t_panas_24", "t_panas_20", "t_panas_14", "t_panas_11", "t_panas_5", "t_panas_9", "t_panas_16", "t_panas_15", "t_panas_23")]
+neg_affect <- per_erp[, c("t_panas_3", "t_panas_27", "t_panas_4", "t_panas_7", "t_panas_25", "t_panas_6", "t_panas_2", "t_panas_26", "t_panas_8", "t_panas_13")]
+alpha(pos_affect)$total$std.alpha
+alpha(neg_affect)$total$std.alpha
+#STATE PANAS
+s_pos_affect <- per_erp[, c("s_panas_19", "s_panas_24", "s_panas_20", "s_panas_14", "s_panas_11", "s_panas_5", "s_panas_9", "s_panas_16", "s_panas_15", "s_panas_23")]
+s_neg_affect <- per_erp[, c("s_panas_3", "s_panas_27", "s_panas_4", "s_panas_7", "s_panas_25", "s_panas_6", "s_panas_2", "s_panas_26", "s_panas_8", "s_panas_13")]
+alpha(pos_affect)$total$std.alpha
+alpha(neg_affect)$total$std.alpha
+#SBI
+sbi_ant <- per_erp[, c("sbi_1", "sbi_7", "sbi_13", "sbi_19", "sbi_4_r", "sbi_10_r", "sbi_16_r", "sbi_22_r")]
+sbi_stm <- per_erp[, c("sbi_5", "sbi_11", "sbi_17", "sbi_23", "sbi_2_r", "sbi_8_r", "sbi_14_r", "sbi_20_r")]
+sbi_rem <- per_erp[, c("sbi_3", "sbi_9", "sbi_15", "sbi_21", "sbi_6_r", "sbi_12_r", "sbi_18_r", "sbi_24_r")]
+alpha(sbi_ant)$total$std.alpha
+alpha(sbi_stm)$total$std.alpha
+alpha(sbi_rem)$total$std.alpha
+#ERQ
+erq_reap <- per_erp[,c("erq_1", "erq_3", "erq_5", "erq_7", "erq_8", "erq_10")]
+erq_supp <- per_erp[, c("erq_2", "erq_4", "erq_6", "erq_9")]
+alpha(erq_reap)$total$std.alpha
+alpha(erq_supp)$total$std.alpha
+#TMMS
+tmms_rep <- per_erp[, c("tmms_1", "tmms_8", "tmms_9_r", "tmms_13", "tmms_19_r", "tmms_26")]
+tmms_att <- per_erp[, c("tmms_2_r", "tmms_3_r", "tmms_4_r", "tmms_7", "tmms_10", "tmms_12", "tmms_17_r", "tmms_18_r", "tmms_21", "tmms_23_r", "tmms_24", "tmms_27_r", "tmms_29_r")]
+tmms_cla <- per_erp[, c("tmms_5_r", "tmms_6", "tmms_11_r", "tmms_14_r", "tmms_15", "tmms_16_r", "tmms_20", "tmms_22_r", "tmms_25", "tmms_28", "tmms_30")]
+alpha(tmms_rep)$total$std.alpha
+alpha(tmms_att)$total$std.alpha
+alpha(tmms_cla)$total$std.alpha
+
+
+#peak peaking for right frontal activity draft
+peak_pick <- erp_long %>%
+  filter(!is.na(mv), electrode %in% RF_elec, between(ms, 800, 1200))
+
+peak_pick %>%
+  group_by(pid, block, electrode) %>%
+  arrange(desc(mv), ms)
+
+x <- c(5, 1, 3, 2, 2, NA)
+row_number(x)
+min_rank(x)
+dense_rank(x)
+percent_rank(x)
+cume_dist(x)
+ntile(x, 2)
+ntile(runif(100), 10)
+
+regression_test <- per_erp %>%
+  group_by(pid, block, savoring_moment) %>%
+  filter(block %in% c("Neg_Dec", "Neg_Watch", "Neg_Inc")) %>%
+  summarize(LPP = mean(LPP))
+
+regression_test$block <- relevel(regression_test$block, "Neg_Watch")
+
+summary(lm(savoring_moment ~ block, data = regression_test))

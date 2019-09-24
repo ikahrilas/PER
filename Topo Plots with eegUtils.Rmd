@@ -1,0 +1,155 @@
+---
+title: "eegUtils"
+author: "Ian Kahrilas"
+date: "9/15/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Load in the eegUtils package
+```{r load eegUtils package}
+# devtools::install_github("craddm/eegUtils")
+library(devtools)
+library(eegUtils)
+library(tidyverse)
+```
+Before starting, we will load in coordinate files
+```{r cartesian coordinates, message = FALSE}
+elec_loc <- read_csv("Equidistant Layout.csv")
+elec_loc <- elec_loc %>%
+  rename("channel" = `channel name`) %>%
+  filter(channel != "CMS", channel != "DRL")
+
+elec_loc$radian_phi <- pi/180 * elec_loc$phi
+
+elec_loc <- elec_loc %>%
+  mutate(x = theta * cos(radian_phi),
+         y = theta * sin(radian_phi))
+
+# this is where our electrodes are
+ggplot(elec_loc, aes(x, y, label = channel)) +
+  geom_text() +
+  theme_bw() +
+  coord_equal()
+```
+Now, we can merge these coordinates with the eeg data
+```{r merge eeg data and electrode coordinates}
+erp_loc <- left_join(erp_long, elec_loc, by = c("electrode" = "channel"))
+```
+## Make topoplots for each of the block conditions over the 400 - 1000 ms time window
+### Positive Increase
+```{r positive increase topo, message = FALSE, warning = FALSE, echo = FALSE}
+topo_elec <- c(paste0("A", 1:32), paste0("B", 1:32))
+
+erp_topo <- erp_loc %>%
+  rename("amplitude" = "mv") %>%
+  filter(!is.na(amplitude), block == "Pos_Inc", electrode %in% topo_elec, between(ms, 398, 1002)) %>%
+  group_by(electrode, x, y) %>%
+  summarize(amplitude = mean(amplitude, na.rm = TRUE))
+
+topoplot(data = erp_topo, limits = c(-5, 5), palette = "viridis", highlights = Pz_elec) +
+  ggtitle("Positive Increase") +
+  theme(plot.title = element_text(hjust = 0.5, size = 22))
+```
+### Positive Watch
+```{r positive watch topo, message = FALSE, warning = FALSE, echo = FALSE}
+erp_topo <- erp_loc %>%
+  rename("amplitude" = "mv") %>%
+  filter(!is.na(amplitude), block == "Pos_Watch", electrode %in% topo_elec, between(ms, 398, 1002)) %>%
+  group_by(electrode, x, y) %>%
+  summarize(amplitude = mean(amplitude, na.rm = TRUE))
+
+topoplot(data = erp_topo, limits = c(-5, 5), palette = "viridis", highlights = Pz_elec) +
+  ggtitle("Positive Watch") +
+  theme(plot.title = element_text(hjust = 0.5, size = 22))
+```
+### Positive Decrease
+```{r positive decrease topo, warning = FALSE, message = FALSE, echo = FALSE}
+erp_topo <- erp_loc %>%
+  rename("amplitude" = "mv") %>%
+  filter(!is.na(amplitude), block == "Pos_Dec", electrode %in% topo_elec, between(ms, 398, 1002)) %>%
+  group_by(electrode, x, y) %>%
+  summarize(amplitude = mean(amplitude, na.rm = TRUE))
+
+topoplot(data = erp_topo, limits = c(-5, 5), palette = "viridis") +
+  ggtitle("Positive Increase") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+### Negative Increase
+```{r negative increase topo, warning = FALSE, message = FALSE, echo = FALSE}
+erp_topo <- erp_loc %>%
+  rename("amplitude" = "mv") %>%
+  filter(!is.na(amplitude), block == "Neg_Inc", electrode %in% topo_elec, between(ms, 398, 1002)) %>%
+  group_by(electrode, x, y) %>%
+  summarize(amplitude = mean(amplitude, na.rm = TRUE))
+
+topoplot(data = erp_topo, limits = c(-5, 5), palette = "viridis") +
+  ggtitle("Negative Increase") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+### Negative Watch
+```{r negative watch topo, warning = FALSE, message = FALSE, echo = FALSE}
+erp_topo <- erp_loc %>%
+  rename("amplitude" = "mv") %>%
+  filter(!is.na(amplitude), block == "Neg_Watch", electrode %in% topo_elec, between(ms, 398, 1002)) %>%
+  group_by(electrode, x, y) %>%
+  summarize(amplitude = mean(amplitude, na.rm = TRUE))
+
+topoplot(data = erp_topo, limits = c(-5, 5), palette = "viridis", highlights = Pz_elec) +
+  ggtitle("Negative Watch") +
+  theme(plot.title = element_text(hjust = 0.5, size = 22))
+```
+### Negative Decrease
+```{r negative decrease topo, warning = FALSE, message = FALSE, echo = FALSE}
+erp_topo <- erp_loc %>%
+  rename("amplitude" = "mv") %>%
+  filter(!is.na(amplitude), block == "Neg_Dec", electrode %in% topo_elec, between(ms, 398, 1002)) %>%
+  group_by(electrode, x, y) %>%
+  summarize(amplitude = mean(amplitude, na.rm = TRUE))
+
+topoplot(data = erp_topo, limits = c(-5, 5), palette = "viridis") +
+  ggtitle("Negative Decrease") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+### Neutral Watch
+```{r neutral watch topo, warning = FALSE, message = FALSE, echo = FALSE}
+erp_topo <- erp_loc %>%
+  rename("amplitude" = "mv") %>%
+  filter(!is.na(amplitude), block == "Neu_Watch", electrode %in% topo_elec, between(ms, 398, 1002)) %>%
+  group_by(electrode, x, y) %>%
+  summarize(amplitude = mean(amplitude, na.rm = TRUE))
+
+topoplot(data = erp_topo, limits = c(-5, 5), palette = "viridis", highlights = Pz_elec) +
+  ggtitle("Neutral Watch") +
+  theme(plot.title = element_text(hjust = 0.5, size = 22))
+```
+
+```{r draft for animated plots}
+GAMplot <- ggplot(GAMtopo[GAMtopo$incircle,], aes(x, y, fill = mv)) +
+  geom_raster() +
+  theme_topo() +
+  scale_fill_gradientn(colours = jet.colors(10),
+                       limits = c(-2, 2),
+                       guide = "colourbar",
+                       oob = squish) +
+  geom_path(data = mask_ring,
+            aes(x, y, z = NULL, fill =NULL),
+            colour = "white",
+            size = 10) +
+  geom_point(data = single_point,
+             aes(x,y,fill = NULL), size = 1.5)+
+  geom_path(data = nose,
+            aes(x, y, z = NULL, fill = NULL),
+            size = 1.5)+
+  geom_path(data = head_shape,
+            aes(x,y,z = NULL,fill = NULL),
+            size = 1.5) +
+  coord_quickmap()
+
+GAMplot + labs(title = "Positive Increase", x = "Milliseconds: {frame_time}") +
+  transition_time(ms) +
+  ease_aes("linear")
+```
+

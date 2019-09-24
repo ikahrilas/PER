@@ -1,0 +1,187 @@
+---
+title: "PER Data Wrangling"
+author: "Ian J. Kahrilas"
+date: "9/9/2019"
+output: html_document
+---
+
+## Wrangling Questionnaire Data
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load in tidyverse package, which will contain functions used for data wrangling
+
+```{r load tidyverse}
+library(tidyverse)
+library(readxl)
+```
+
+We will first load in the questionnaire data
+
+```{r load in questionnaire data, message = FALSE, warning = FALSE}
+per_dataset <- read_xlsx("PER Questionnaires.xlsx")
+# without running this code, R is unable to recognize some column names. seems to be a common issue when working with xls files. This code makes it easier for R to work with the variables by setting it to UTF-8. 
+names(per_dataset) <- enc2native(names(per_dataset))
+```
+
+Make correction to participant 201820651 - forgot to administer t2 PANAS to this participant,so had to readminister the questionnaire just to use first questionnaire (state PANAS). This code moves that to where it would have been if the participant had completed the survey normally.
+
+```{r 201820651 PANAS correction}
+post_panas_51 <- per_dataset[6, 2:28]
+per_dataset[7, 319:345] <-  post_panas_51
+per_dataset[7, 1] <- 206201851
+```
+
+Let's delete unnecessary rows in the data
+
+```{r delete unnecessary rows}
+per_dataset <- per_dataset[-c(6, 53, 57), ]
+```
+
+Fix the second 206201819 pid to 206201820 and second 206201841 to 206201842 - these were errors noted in the participant tracking log
+
+```{r fix incorrect pids}
+per_dataset[37, 1] <- 206201820
+per_dataset[16, 1] <- 206201842
+```
+
+Reverse score SBI itmes. Items are a 7-item likert scale, so subtract each score from 8.
+
+```{r reverse score SBI items}
+sbi_rev_items <- paste("sbi_", seq(2, 24, by = 2), sep = "") #variable containing SBI items to be reversed, which is every other item from 2 to 24
+#create names of reversed items to be used in for loop
+sbi_rev_names <- paste0(sbi_rev_items, "_r")
+#define reverse scoring function that can be used for any measure
+reverse <- function(item, subtraction) {
+  subtraction - item
+} 
+#for loop that derives reverse scored SBI items
+for (i in seq_along(sbi_rev_items)) {
+  per_dataset[, sbi_rev_names[i]] <- reverse(per_dataset[, sbi_rev_items[i]], 8)
+}
+```
+
+Derive SBI subscales of anticipating, savoring the moment, and anticipating by averaging the appropriate items.
+
+```{r SBI subscales}
+#establish variable containing the number of items in each average, which is 8.
+sbi_sub_n_items <- 8
+#The following code derives the subscales and adds these variables to the per dataset. Subscales are derived by averaging select items.
+per_dataset <- per_dataset %>%
+  mutate(anticipating = (sbi_1 + sbi_7 + sbi_13 + sbi_19 + sbi_4_r + sbi_10_r + sbi_16_r + sbi_22_r) / sbi_sub_n_items,
+         savoring_moment = (sbi_5 + sbi_11 + sbi_17 + sbi_23 + sbi_2_r + sbi_8_r + sbi_14_r + sbi_20_r) / sbi_sub_n_items,
+         reminiscing  = (sbi_3 + sbi_9 + sbi_15 + sbi_21 + sbi_6_r + sbi_12_r + sbi_18_r + sbi_24_r) / sbi_sub_n_items,
+         sbi_tot = (sbi_1 + sbi_7 + sbi_13 + sbi_19 + sbi_4_r + sbi_10_r + sbi_16_r + sbi_22_r + sbi_5 + sbi_11 + sbi_17 + 
+                      sbi_23 + sbi_2_r + sbi_8_r + sbi_14_r + sbi_20_r + sbi_3 + sbi_9 + sbi_15 + sbi_21 + sbi_6_r + 
+                      sbi_12_r + sbi_18_r + sbi_24_r) / (sbi_sub_n_items * 3) #average total by 24, 3x the amount as the other subscales
+         )
+```
+
+Derive positive and negative affectivity scales from trait PANAS, which are derived by simply summing select items
+
+```{r trait PANAS scales}
+per_dataset <- per_dataset %>%
+  mutate(pos_affectivity = t_panas_19 + t_panas_24 + t_panas_20 + t_panas_14 + t_panas_11 + t_panas_5 + t_panas_9 + t_panas_16 + t_panas_15 + t_panas_23,
+         neg_affectivity = t_panas_3 + t_panas_27 + t_panas_4 + t_panas_7 + t_panas_25 + t_panas_6 + t_panas_2 + t_panas_26 + t_panas_8 + t_panas_13)
+```
+
+Derive affect scales from state PANAS, which are derived by simply summing select items
+
+```{r state PANAS scales}
+per_dataset <- per_dataset %>%
+  mutate(pos_affect = s_panas_19 + s_panas_24 + s_panas_20 + s_panas_14 + s_panas_11 + s_panas_5 + s_panas_9 + s_panas_16 + s_panas_15 + s_panas_23,
+         neg_affect = s_panas_3 + s_panas_27 + s_panas_4 + s_panas_7 + s_panas_25 + s_panas_6 + s_panas_2 + s_panas_26 + s_panas_8 + s_panas_13)
+```
+
+Derive positive affectivity, negative affectivity, and anxious arousal MASQ subscales, which are derived by simply summing select items
+
+```{r MASQ subscales}
+per_dataset <- per_dataset %>%
+  mutate(masq_pa = masq_2 + masq_4 + masq_5 + masq_7 + masq_11 + masq_14 + masq_19 + masq_23 + masq_26 + masq_28 + masq_32 + masq_34 + masq_36 + masq_37,
+         masq_na = masq_9 + masq_13 + masq_17 + masq_21 + masq_29 + masq_30 + masq_35 + masq_38,
+         masq_aa = masq_1 + masq_3 + masq_6 + masq_8 + masq_10 + masq_12 + masq_15 + masq_16 + masq_18 + masq_20 + masq_22 + masq_24 + masq_25 + masq_27 + masq_31 + masq_33 + masq_39
+         )
+```
+
+Reverse score TMMS (trait meta mood scale)
+
+```{r reverse score TMMS}
+tmms_rev_items <- paste0("tmms_", c(2:5, 9, 11, 14, 16:19, 22, 23, 27, 29)) #variable containing TMMS items to be reversed 
+#create names of reversed items to be used in for loop
+tmms_rev_names <- paste0(tmms_rev_items, "_r")
+#for loop that derives reverse scored TMMS items - subtract items from 6
+for (i in seq_along(tmms_rev_items)) {
+  per_dataset[, tmms_rev_names[i]] <- reverse(per_dataset[, tmms_rev_items[i]], 6)
+}
+```
+
+Derive TMMS subscales (repair, attention, and clarity), which is derived by summing select items
+
+```{r TMMS subscales}
+per_dataset <- per_dataset %>%
+  mutate(tmms_repair = tmms_1 + tmms_8 + tmms_9_r + tmms_13 + tmms_19_r + tmms_26,
+         tmms_attention = tmms_2_r + tmms_3_r + tmms_4_r + tmms_7 + tmms_10 + tmms_12 + tmms_17_r + tmms_18_r + tmms_21 + tmms_23_r + tmms_24 + tmms_27_r + tmms_29_r,
+         tmms_clarity = tmms_5_r + tmms_6 + tmms_11_r + tmms_14_r + tmms_15 + tmms_16_r + tmms_20 + tmms_22_r + tmms_25 + tmms_28 + tmms_30
+         )
+```
+
+Derive ERQ reappraisal and suppresion subscales by summing select items
+
+```{r ERQ subscales}
+per_dataset <- per_dataset %>%
+  mutate(erq_reappraisal = erq_1 + erq_3 + erq_5 + erq_7 + erq_8 + erq_10,
+         erq_suppression = erq_2 + erq_4 + erq_6 + erq_9
+         )
+```
+Derive total phq-9 score
+```{r phq_9 total}
+per_dataset <- per_dataset %>%
+  mutate(depression = phq_1 + phq_2 + phq_3 + phq_4 + phq_5 + phq_6 + phq_7 + phq_8 + phq_9)
+```
+
+## Wrangling E-Prime Data
+
+Load in e-prime data
+
+```{r load in e-prime data}
+eprime <- read.table("merged_per_data.txt", sep = "\t", header = TRUE)
+```
+
+Select variables of interest (subject number, block type, as well as arousal, difficulty, and valence ratings)
+
+```{r filter out extraneous variables in e-prime data}
+eprime_int <- eprime %>%
+  select(Subject, Arousal.RESP, Difficulty.RESP, Valence.RESP, Procedure.Trial.) %>%
+  rename(pid = Subject, arousal = Arousal.RESP, difficulty = Difficulty.RESP, valence = Valence.RESP, block = Procedure.Trial.) %>% # rename variables
+  filter(!block == "PRACTICE", !block == "PRACTICEWNEU") %>% #filter out practice trials
+  group_by(pid, block) %>% #arrange data so that each participant has single row for each proc_type
+  summarize(arousal = mean(arousal),
+            difficulty = mean(difficulty),
+            valence = mean(valence)
+            )
+```
+
+Fix data using info from tracking log
+
+```{r fix e-prime data}
+#20620189 should have 5 for POSDEC arousal instead of 4
+eprime_int[61, 3] <- 5
+#206201841 should have been 1 for POSWAT difficulty instead of 4
+eprime_int[273, 4] <- 1
+```
+
+Collate questionnaire and e-prime data
+
+```{r merge e-prime and questionnaire data}
+per_dataset$pid <- as.integer(per_dataset$pid) #convert pid column to integer so tbls can be merged
+per_full <- full_join(eprime_int, per_dataset, by = "pid") #join data
+```
+
+Create smaller dataset with only variables of interest
+
+```{r create smaller dataeset}
+per_int <- per_full %>%
+  select(pid:valence, age:ethnicity, Race:political_orientation, anticipating:masq_aa, tmms_repair:erq_suppression)
+```
