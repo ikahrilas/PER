@@ -56,7 +56,9 @@ ggplot(avg_erp_long_LPP, aes(ms, mv, color = block)) +
   xlim(-200, 2000) +
   labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
   theme_classic()
+```
 
+```{r}
 # this plots all blocks for RF
 ggplot(avg_erp_long_RF, aes(ms, mv, color = block)) +
   geom_line(size = 1) +
@@ -65,6 +67,7 @@ ggplot(avg_erp_long_RF, aes(ms, mv, color = block)) +
   labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
   theme_classic()
 ```
+
 Publication-ready passive watch condition plot
 ```{r passive watch conditions}
 avg_erp_long_LPP %>%
@@ -89,6 +92,9 @@ avg_erp_long_LPP %>%
                        labels = c("Negative Watch", "Positive Watch", "Neutral Watch")
                        ) 
 
+```
+
+```{r}
 # right frontal
 avg_erp_long_RF %>%
   filter(block %in% c("Neg_Dec",  "Neg_Inc", "Neg_Watch"), ms <= 2000) %>%
@@ -129,6 +135,9 @@ avg_erp_long_LPP %>%
                           breaks = c("Pos_Watch", "Pos_Inc"),
                           labels = c("Positive Watch", "Positive Increase")
   )
+```
+
+```{r}
 ####This plots RF for positive conditions
 avg_erp_long_RF %>%
   filter(block %in% c("Pos_Watch",  "Pos_Inc", "Pos_Dec"), ms <= 2000) %>%
