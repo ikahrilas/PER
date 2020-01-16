@@ -12,7 +12,7 @@ Load in the eegUtils package
 ```{r load eegUtils package}
 # devtools::install_github("craddm/eegUtils")
 library(devtools)
-library(eegUtils)
+library(eegUtils) # remotes::install_github("craddm/eegUtils")
 library(tidyverse)
 ```
 Before starting, we will load in coordinate files
