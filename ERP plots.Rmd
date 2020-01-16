@@ -42,7 +42,7 @@ avg_erp_long_RF <- erp_long %>%
 ```{r electrode site again to change as needed}
 #Use this code to select Pz cluster electrodes
 Pz_elec <- c(paste("A", 25, sep = ""), paste("B", c(21, 22, 28), sep = ""))
-Pz_elec <- paste0("B", c(23, 24, 26, 27))
+Pz_elec <- paste0("B", c(23, 24, 26, 27)) # configuration that was used for SRP poster 2019
 #This is sight of the observed right frontal activity that appears to be maximal at around 1000 ms: B2, B7, & B8
 RF_elec <- c(paste0("B", c(2, 7, 8)))
 ```
