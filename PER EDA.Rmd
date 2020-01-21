@@ -2,18 +2,30 @@
 title: "Exploratory Data Analysis with Pawpaw Miller"
 author: "Ian Kahrilas"
 date: "1/21/2020"
-output: ioslides_presentation
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
 # load in dataset
 per_erp <- read_csv("per_erp.csv")
 glimpse(per_erp)
 ```
 
-## R Markdown
+# Univariate Analyses
 
+## Variables
+The following variables are a part of the dataset used for PER
+
+```{r variables for PER}
+names(per_erp)
+```
+- Block corresponds to the specific regulation/valence condition
+- The variables with "LPP" in the name correspond to the occipital parietal component observed across different timepoints. The variable just named "LPP" corresponds to the 400-1000 ms window, which the most commonly occuring window used in the literature and the window used for analyses.
+- Difficulty and valence correspond to the rating questions asked of each participant following each regulation block
+- Political orientation is a 7-point likert scale assessing ones political beliefs. 1 corresponds to very liberal and 7 corresponds to very conservative. This was included since an article (Tritt et al., 2016) found differences in LPP signal depending on political orientation. These were ultimately never used in analyses.
+ - 
 
 ## Slide with Bullets
 
