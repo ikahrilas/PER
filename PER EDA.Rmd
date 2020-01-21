@@ -1,0 +1,35 @@
+---
+title: "Exploratory Data Analysis with Pawpaw Miller"
+author: "Ian Kahrilas"
+date: "1/21/2020"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+# load in dataset
+per_erp <- read_csv("per_erp.csv")
+glimpse(per_erp)
+```
+
+## R Markdown
+
+
+## Slide with Bullets
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+## Slide with R Output
+
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
