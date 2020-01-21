@@ -59,7 +59,7 @@ LPP_3000 <- erp_long %>%
 #RF peak picking code
 RF <- erp_long %>%
   select(pid:ms, electrode, mv) %>%
-  filter(electrode %in% RF_elec, between(ms, 800, 2000)) %>% #filter dataset in the window of 800 to 2000ms, which can accomodate all participants' peaks but ends before presentaiton of next stimulus
+  filter(electrode %in% RF_elec, between(ms, 800, 2000)) %>% #filter dataset in the window of 800 to 2000ms, which can accomodate all participants' peaks but ends before presentation of next stimulus
   group_by(pid, block, electrode) %>% 
   mutate(rank = row_number(desc(mv))) %>% #rank cases in terms of mv (1 = greatest amplitude) for each electrode within each block within each participant.
   filter(between(rank, 1, 5)) %>% #select the top 5 cases that have the greatest mv - this should subsume 2 timepoints before and after the peak. This may need to be revised.
@@ -105,6 +105,8 @@ per_erp <- full_join(LPP_total, per_int, by = c("pid", "block")) %>%
 #rename LPP 300 to 800 variable to just LPP, for some reason lmer function doesn't behave when variable names contain numbers
 per_erp <- per_erp %>% 
   rename("LPP" = "400_to_1000_LPP")
+# save this dataset to the home directory
+write_csv(per_erp, "per_erp.csv")
 ```
 
 Get descriptive statistics
