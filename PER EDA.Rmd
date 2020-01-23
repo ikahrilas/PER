@@ -240,3 +240,4 @@ result <- shapiro.test(pull(filter(LPP_pid_rem, block == condition))) %>%
 map2(conditions, cond_names, ~ shapiro_LPP(.x, .y))
 ```
 
+Next up, run bivariate analyses to observe nature of relationship between study variables.
