@@ -206,4 +206,37 @@ cases %>%
 # this outputs participants that have LPP amplitudes greater than 17, which denote the extreme cases we observed in the histograms and qqplots.
 map2(conditions, cond_names, ~ extreme_cases(.x, .y))
 ```
-Our extreme cases are 206201843 and 206201840
+Our extreme cases are 206201843 and 206201840. Let's inspect them
+```{r}
+per_erp %>% 
+  filter(pid %in% c(206201843, 206201840))
+```
+Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, they will be removed from the dataset
+```{r remove noisy participants}
+LPP_pid_rem <- LPP_by_pid %>% 
+  filter(!(pid %in% c(206201843, 206201840)))
+# re-run normality tests to see what's going on
+LPP_hist_qq <- function(cond, title) {
+LPP_pid_rem %>% 
+  filter(block == cond) %>% 
+  gghistogram(., "LPP", title = title) %>% 
+    print()
+LPP_pid_rem %>% 
+  filter(block == cond) %>% 
+  ggqqplot(., "LPP", title = title)
+}
+
+conditions <- unique(LPP_by_pid$block)
+cond_names <- c(paste("Negative", c("Decrease", "Increase", "Watch")), "Neutral Watch", paste("Positive", c("Decrease", "Increase", "Watch")))
+
+map2(conditions, cond_names, ~ LPP_hist_qq(cond = .x, title = .y))
+```
+
+```{r shapiro wilk tests with filtered data}
+shapiro_LPP <- function(condition, title) {
+result <- shapiro.test(pull(filter(LPP_pid_rem, block == condition))) %>% 
+  pander(caption = title)
+}
+map2(conditions, cond_names, ~ shapiro_LPP(.x, .y))
+```
+
