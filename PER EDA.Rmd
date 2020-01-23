@@ -2,7 +2,9 @@
 title: "Exploratory Data Analysis with Pawpaw Miller"
 author: "Ian Kahrilas"
 date: "1/21/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,6 +15,7 @@ per_erp <- read_csv("per_erp.csv")
 library(pander)
 library(ggpubr)
 library(car)
+library(moments)
 ```
 
 # Univariate Analyses
@@ -140,3 +143,39 @@ shapiro.test(pid_StM$savoring_moment) %>%
   pander()
 rm(pid_StM)
 ```
+
+## LPP
+
+### Histograms for each block
+```{r histograms for LPP for each block, message=FALSE, warning=FALSE}
+LPP_by_pid <- per_erp %>% 
+  group_by(pid, block) %>% 
+  summarize(LPP = mean(LPP, na.rm = TRUE))
+
+blocks <- list(Neg_Dec = filter(LPP_by_pid, block == "Neg_Dec"),
+               Neg_Inc = filter(LPP_by_pid, block == "Neg_Inc"),
+               Neg_Watch = filter(LPP_by_pid, block == "Neg_Watch"),
+               Neu_Watch = filter(LPP_by_pid, block == "Neu_Watch"),
+               Pos_Dec = filter(LPP_by_pid, block == "Pos_Dec"),
+               Pos_Inc = filter(LPP_by_pid, block == "Pos_Inc"),
+               Pos_Watch = filter(LPP_by_pid, block == "Pos_Watch"))
+
+map(blocks, ~ gghistogram(.x, "LPP", title = paste(c(.x$block[1], "Histogram"))))
+```
+
+### QQplots for each block
+
+```{r qqplots for LPP by each block}
+map(blocks, ~ ggqqplot(.x, "LPP", title = paste(c(.x$block[1], "QQplot"))))
+```
+
+### Shapiro-Wilk Tests
+
+```{r}
+map(blocks, ~ {
+  shapiro.test(.x$LPP)
+})
+```
+The following LPP distributions are non-normally distributed:
+
+- 
