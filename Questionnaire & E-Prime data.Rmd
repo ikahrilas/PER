@@ -184,4 +184,5 @@ Create smaller dataset with only variables of interest
 ```{r create smaller dataeset}
 per_int <- per_full %>%
   select(pid:valence, age:ethnicity, Race:political_orientation, anticipating:masq_aa, tmms_repair:erq_suppression)
+write_csv(per_int, "per_measures.csv")
 ```
