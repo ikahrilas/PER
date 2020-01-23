@@ -81,6 +81,7 @@ pid_pa <- per_erp %>%
   summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE))
 shapiro.test(pid_pa$pos_affectivity) %>% 
   pander()
+rm(pid_pa)
 ```
 It is not significant, suggesting that the distribution of PA does not significantly deviate from the normal distribution.
 ```{r negative affectivity histogram}
@@ -100,4 +101,42 @@ per_erp %>%
   stat_qq_line() +
   ggtitle("NA QQPlot")
 ```
+```{r shapiro-wilk test for NA}
+pid_na <- per_erp %>% 
+  group_by(pid) %>% 
+  summarize(neg_affectivity = mean(neg_affectivity, na.rm = TRUE))
+shapiro.test(pid_na$neg_affectivity) %>% 
+  pander()
+rm(pid_na)
+```
+NA does not significantly deviate from the normal distribution
 
+```{r}
+
+```
+## Savoring the Moment
+```{r StM histogram}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(savoring_moment = mean(savoring_moment, na.rm = TRUE)) %>% 
+  ggplot(., (aes(savoring_moment))) +
+    geom_histogram(bins = 25) +
+    ggtitle("Savoring the Moment Histogram")
+```
+```{r StM qqplot}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(savoring_moment = mean(savoring_moment, na.rm = TRUE)) %>% 
+  ggplot(., aes(sample = savoring_moment)) + 
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Savoring the Moment QQPlot")
+```
+```{r shapiro-wilk test for StM}
+pid_StM <- per_erp %>% 
+  group_by(pid) %>% 
+  summarize(savoring_moment = mean(savoring_moment, na.rm = TRUE))
+shapiro.test(pid_StM$savoring_moment) %>% 
+  pander()
+rm(pid_StM)
+```
