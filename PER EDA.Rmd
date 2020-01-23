@@ -136,8 +136,8 @@ rm(pid_StM)
 
 ## LPP
 
-### Histograms and QQplots for each block
-```{r histograms and qqplots for LPP for each block, message=FALSE, warning=FALSE}
+### Histograms, and QQplots for each block
+```{r histograms and qqplots for LPP for each block, warning = FALSE}
 LPP_by_pid <- per_erp %>% 
   group_by(pid, block) %>% 
   summarize(LPP = mean(LPP, na.rm = TRUE))
@@ -149,8 +149,7 @@ LPP_by_pid %>%
     print()
 LPP_by_pid %>% 
   filter(block == cond) %>% 
-  ggqqplot(., "LPP", title = title) %>% 
-  print()
+  ggqqplot(., "LPP", title = title)
 }
 
 conditions <- unique(LPP_by_pid$block)
@@ -158,3 +157,53 @@ cond_names <- c(paste("Negative", c("Decrease", "Increase", "Watch")), "Neutral 
 
 map2(conditions, cond_names, ~ LPP_hist_qq(cond = .x, title = .y))
 ```
+
+```{r shapiro-wilk tests for normality}
+shapiro_LPP <- function(condition, title) {
+result <- shapiro.test(pull(filter(LPP_by_pid, block == condition))) %>% 
+  pander(caption = title)
+  }
+```
+
+```{r negative decrease}
+shapiro_LPP("Neg_Dec", "Negative Decrease")
+```
+
+```{r negative increase}
+shapiro_LPP("Neg_Inc", "Negative Increase")
+```
+
+```{r negative watch}
+shapiro_LPP("Neg_Watch", "Negative Watch")
+```
+
+```{r neutral watch}
+shapiro_LPP("Neu_Watch", "Neutral Watch")
+```
+
+```{r positive decrease}
+shapiro_LPP("Pos_Dec", "Positive Decrease")
+```
+```{r positive increase}
+shapiro_LPP("Pos_Inc", "Positive Increase")
+```
+
+```{r positive watch}
+shapiro_LPP("Pos_Watch", "Positive Watch")
+```
+
+Several of the conditions have LPPs that are non-normally distributed with some outtliers. Let's inspect these extreme cases.
+
+```{r examine extreme cases}
+extreme_cases <- function(condition, name) {
+(cases <- LPP_by_pid %>% 
+  filter(block == condition,
+         LPP > 17))
+cases %>% 
+  select(pid) %>% 
+  pull()
+}
+# this outputs participants that have LPP amplitudes greater than 17, which denote the extreme cases we observed in the histograms and qqplots.
+map2(conditions, cond_names, ~ extreme_cases(.x, .y))
+```
+Our extreme cases are 206201843 and 206201840
