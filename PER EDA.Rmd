@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 # load in dataset
 per_erp <- read_csv("per_erp.csv")
-glimpse(per_erp)
+library(pander)
 ```
 
 # Univariate Analyses
@@ -19,13 +19,39 @@ glimpse(per_erp)
 The following variables are a part of the dataset used for PER
 
 ```{r variables for PER}
-names(per_erp)
+matrix(names(per_erp), ncol = 2)
 ```
-- Block corresponds to the specific regulation/valence condition
-- The variables with "LPP" in the name correspond to the occipital parietal component observed across different timepoints. The variable just named "LPP" corresponds to the 400-1000 ms window, which the most commonly occuring window used in the literature and the window used for analyses.
-- Difficulty and valence correspond to the rating questions asked of each participant following each regulation block
-- Political orientation is a 7-point likert scale assessing ones political beliefs. 1 corresponds to very liberal and 7 corresponds to very conservative. This was included since an article (Tritt et al., 2016) found differences in LPP signal depending on political orientation. These were ultimately never used in analyses.
- - 
+
+```{r descriptive stats on variables of interest}
+per_erp %>% 
+  summarize("PA Mean" = mean(pos_affectivity, na.rm = TRUE),
+            "PA SD" = sd(pos_affectivity, na.rm = TRUE),
+            "NA Mean" = mean(neg_affectivity, na.rm = TRUE),
+            "NA SD" = sd(neg_affectivity, na.rm = TRUE),
+            "StM Mean" = mean(savoring_moment, na.rm = TRUE),
+            "StM SD" = sd(savoring_moment, na.rm = TRUE),
+            "Anticipating Mean" = mean(anticipating, na.rm = TRUE),
+            "Anticipating SD" = sd(anticipating, na.rm = TRUE),
+            "Reminiscing Mean" = mean(reminiscing, na.rm = TRUE),
+            "Reminiscing SD" = sd(reminiscing, na.rm = TRUE)) %>% 
+  pander()
+
+
+```
+
+
+## PANAS
+
+Visualized the distribution and QQ plot of PANAS
+
+```{r}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(PA = mean(pos_affectivity, na.rm = TRUE)) %>% 
+  ggplot(., (aes(PA))) +
+    geom_histogram(bins = 31)
+```
+
 
 ## Slide with Bullets
 
