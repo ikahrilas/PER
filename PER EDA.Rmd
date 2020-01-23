@@ -1,10 +1,10 @@
 ---
-title: "Exploratory Data Analysis with Pawpaw Miller"
+title: "Exploratory Data Analyses for PER Project"
 author: "Ian Kahrilas"
 date: "1/21/2020"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -18,18 +18,8 @@ library(car)
 library(moments)
 ```
 
-# Univariate Analyses
+## Questionnaire Descriptive Statisitcs
 
-## Variables
-The following variables are a part of the dataset used for PER
-
-```{r variables for PER, echo = TRUE}
-matrix(names(per_erp), ncol = 2)
-```
-
-## Descriptive Statistics
-
-### Questionnaire descriptive statisitcs
 ```{r descriptive stats on variables of interest}
 per_erp %>% 
   summarize("PA Mean" = mean(pos_affectivity, na.rm = TRUE),
@@ -45,8 +35,9 @@ per_erp %>%
   pander(split.tables = 200, caption = "PA = Positive Affectivity, NA = Negative Affectivity, StM = Savoring the Moment")
 ```
 
-### LPP Descriptive Statistics by Block
-```{r}
+## LPP Descriptive Statistics by Block
+
+```{r descriptive statistics for LPP}
 per_erp %>% 
   group_by(block) %>% 
   summarize("LPP Mean" = mean(LPP, na.rm = TRUE),
@@ -54,16 +45,14 @@ per_erp %>%
   pander()
 ```
 
-## PANAS
-
-Visualized the distribution and QQ plot of PANAS
+## Positive Affectivity
 
 ```{r PA histogram}
 per_erp %>% 
   group_by(pid) %>% 
   summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE)) %>% 
   ggplot(., (aes(pos_affectivity))) +
-    geom_histogram(bins = 31) +
+    geom_histogram(bins = 15) +
     ggtitle("PA Histogram")
 ```
 ```{r PA QQplot}
@@ -78,7 +67,7 @@ per_erp %>%
 
 It would appear that there is a slight negative skew to the data, though it does not deviate from a gaussian distribution substantially. Let's confirm with a shapiro-wilk test for normality
 
-```{r shapiro-wilk test for positive affectivity, echo = TRUE}
+```{r shapiro-wilk test for positive affectivity, echo = FALSE}
 pid_pa <- per_erp %>% 
   group_by(pid) %>% 
   summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE))
@@ -87,12 +76,15 @@ shapiro.test(pid_pa$pos_affectivity) %>%
 rm(pid_pa)
 ```
 It is not significant, suggesting that the distribution of PA does not significantly deviate from the normal distribution.
+
+## Negative Affectivity
+
 ```{r negative affectivity histogram}
 per_erp %>% 
   group_by(pid) %>% 
   summarize(neg_affectivity = mean(neg_affectivity, na.rm = TRUE)) %>% 
   ggplot(., (aes(neg_affectivity))) +
-    geom_histogram(bins = 25) +
+    geom_histogram(bins = 15) +
     ggtitle("NA Histogram")
 ```
 ```{r negative affectivity qqplot}
@@ -112,12 +104,10 @@ shapiro.test(pid_na$neg_affectivity) %>%
   pander()
 rm(pid_na)
 ```
-NA does not significantly deviate from the normal distribution
+NA does not significantly deviate from the normal distribution.
 
-```{r}
-
-```
 ## Savoring the Moment
+
 ```{r StM histogram}
 per_erp %>% 
   group_by(pid) %>% 
