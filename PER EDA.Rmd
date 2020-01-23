@@ -51,35 +51,21 @@ per_erp %>%
   pander()
 ```
 
-
 ## PANAS
 
 Visualized the distribution and QQ plot of PANAS
 
-```{r}
-per_erp %>% 
-  group_by(pid) %>% 
+```{r PA histogram, warning=FALSE}
+pid_group <- per_erp %>% group_by(pid)
+pid_group %>% 
   summarize(PA = mean(pos_affectivity, na.rm = TRUE)) %>% 
   ggplot(., (aes(PA))) +
-    geom_histogram(bins = 31)
+    geom_histogram(bins = 31) +
+    ggtitle("PA Histogram")
 ```
-
-
-## Slide with Bullets
-
-- Bullet 1
-- Bullet 2
-- Bullet 3
-
-## Slide with R Output
-
-```{r cars, echo = TRUE}
-summary(cars)
-```
-
-## Slide with Plot
-
-```{r pressure}
-plot(pressure)
+```{r PA QQplot}
+pid_group %>% 
+  summarize(PA = mean(pos_affectivity, na.rm = TRUE)) %>% 
+  qqnorm(PA)
 ```
 
