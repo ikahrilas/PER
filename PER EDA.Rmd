@@ -137,35 +137,34 @@ rm(pid_StM)
 ## LPP
 
 ### Histograms for each block
-```{r histograms for LPP for each block, message=FALSE, warning=FALSE}
+```{r histograms and qqplots for LPP for each block, message=FALSE, warning=FALSE}
 LPP_by_pid <- per_erp %>% 
   group_by(pid, block) %>% 
   summarize(LPP = mean(LPP, na.rm = TRUE))
 
-blocks <- list(Neg_Dec = filter(LPP_by_pid, block == "Neg_Dec"),
-               Neg_Inc = filter(LPP_by_pid, block == "Neg_Inc"),
-               Neg_Watch = filter(LPP_by_pid, block == "Neg_Watch"),
-               Neu_Watch = filter(LPP_by_pid, block == "Neu_Watch"),
-               Pos_Dec = filter(LPP_by_pid, block == "Pos_Dec"),
-               Pos_Inc = filter(LPP_by_pid, block == "Pos_Inc"),
-               Pos_Watch = filter(LPP_by_pid, block == "Pos_Watch"))
+LPP_hist_qq <- function(cond, title) {
+LPP_by_pid %>% 
+  filter(block == cond) %>% 
+  gghistogram(., "LPP", title = title) %>% 
+    print()
+LPP_by_pid %>% 
+  filter(block == cond) %>% 
+  ggqqplot(., "LPP", title = title)
+}
 
-map(blocks, ~ gghistogram(.x, "LPP", title = paste(c(.x$block[1], "Histogram"))))
-```
+conditions <- unique(LPP_by_pid$block)
+cond_names <- c(paste("Negative", c("Decrease", "Increase", "Watch")), "Neutral Watch", paste("Positive", c("Decrease", "Increase", "Watch")))
 
-### QQplots for each block
-
-```{r qqplots for LPP by each block}
-map(blocks, ~ ggqqplot(.x, "LPP", title = paste(c(.x$block[1], "QQplot"))))
+map2(conditions, cond_names, ~ LPP_hist_qq(cond = .x, title = .y))
 ```
 
 ### Shapiro-Wilk Tests
 
 ```{r}
-map(blocks, ~ {
-  shapiro.test(.x$LPP)
-})
-```
+#map(blocks, ~ {
+ # shapiro.test(.x$LPP)
+#})
+```s
 The following LPP distributions are non-normally distributed:
 
 - 
