@@ -11,6 +11,8 @@ library(tidyverse)
 # load in dataset
 per_erp <- read_csv("per_erp.csv")
 library(pander)
+library(ggpubr)
+library(car)
 ```
 
 # Univariate Analyses
@@ -38,8 +40,6 @@ per_erp %>%
             "Reminiscing Mean" = mean(reminiscing, na.rm = TRUE),
             "Reminiscing SD" = sd(reminiscing, na.rm = TRUE)) %>% 
   pander(split.tables = 200, caption = "PA = Positive Affectivity, NA = Negative Affectivity, StM = Savoring the Moment")
-
-
 ```
 
 ### LPP Descriptive Statistics by Block
@@ -55,17 +55,49 @@ per_erp %>%
 
 Visualized the distribution and QQ plot of PANAS
 
-```{r PA histogram, warning=FALSE}
-pid_group <- per_erp %>% group_by(pid)
-pid_group %>% 
-  summarize(PA = mean(pos_affectivity, na.rm = TRUE)) %>% 
-  ggplot(., (aes(PA))) +
+```{r PA histogram}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE)) %>% 
+  ggplot(., (aes(pos_affectivity))) +
     geom_histogram(bins = 31) +
     ggtitle("PA Histogram")
 ```
 ```{r PA QQplot}
-pid_group %>% 
-  summarize(PA = mean(pos_affectivity, na.rm = TRUE)) %>% 
-  qqnorm(PA)
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE)) %>% 
+  ggplot(., aes(sample = pos_affectivity)) + 
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("PA QQPlot")
+```
+
+It would appear that there is a slight negative skew to the data, though it does not deviate from a gaussian distribution substantially. Let's confirm with a shapiro-wilk test for normality
+
+```{r shapiro-wilk test for positive affectivity, echo = TRUE}
+pid_pa <- per_erp %>% 
+  group_by(pid) %>% 
+  summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE))
+shapiro.test(pid_pa$pos_affectivity) %>% 
+  pander()
+```
+It is not significant, suggesting that the distribution of PA does not significantly deviate from the normal distribution.
+```{r negative affectivity histogram}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(neg_affectivity = mean(neg_affectivity, na.rm = TRUE)) %>% 
+  ggplot(., (aes(neg_affectivity))) +
+    geom_histogram(bins = 25) +
+    ggtitle("NA Histogram")
+```
+```{r negative affectivity qqplot}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(neg_affectivity = mean(neg_affectivity, na.rm = TRUE)) %>% 
+  ggplot(., aes(sample = neg_affectivity)) + 
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("NA QQPlot")
 ```
 
