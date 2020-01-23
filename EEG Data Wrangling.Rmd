@@ -95,6 +95,8 @@ names(mul_tbl) <- gsub("_.*", "", names(mul_tbl))
 erp <- full_join(mul_tbl, evt_tbl, by = c("pid", "block"))
 # can also drop x72 and x73 columns, as they don't contain anything!
 erp <- erp %>% select(-c(X73, X72))
+# fix incorrect pid
+erp$pid[erp$pid == 201206832] <- 206201832
 ```
 
 Now, we are set to do some analyses!
