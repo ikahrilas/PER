@@ -136,7 +136,7 @@ rm(pid_StM)
 
 ## LPP
 
-### Histograms for each block
+### Histograms and QQplots for each block
 ```{r histograms and qqplots for LPP for each block, message=FALSE, warning=FALSE}
 LPP_by_pid <- per_erp %>% 
   group_by(pid, block) %>% 
@@ -149,7 +149,8 @@ LPP_by_pid %>%
     print()
 LPP_by_pid %>% 
   filter(block == cond) %>% 
-  ggqqplot(., "LPP", title = title)
+  ggqqplot(., "LPP", title = title) %>% 
+  print()
 }
 
 conditions <- unique(LPP_by_pid$block)
@@ -157,14 +158,3 @@ cond_names <- c(paste("Negative", c("Decrease", "Increase", "Watch")), "Neutral 
 
 map2(conditions, cond_names, ~ LPP_hist_qq(cond = .x, title = .y))
 ```
-
-### Shapiro-Wilk Tests
-
-```{r}
-#map(blocks, ~ {
- # shapiro.test(.x$LPP)
-#})
-```s
-The following LPP distributions are non-normally distributed:
-
-- 
