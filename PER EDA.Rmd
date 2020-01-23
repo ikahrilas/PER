@@ -18,10 +18,13 @@ library(pander)
 ## Variables
 The following variables are a part of the dataset used for PER
 
-```{r variables for PER}
+```{r variables for PER, echo = TRUE}
 matrix(names(per_erp), ncol = 2)
 ```
 
+## Descriptive Statistics
+
+### Questionnaire descriptive statisitcs
 ```{r descriptive stats on variables of interest}
 per_erp %>% 
   summarize("PA Mean" = mean(pos_affectivity, na.rm = TRUE),
@@ -34,9 +37,18 @@ per_erp %>%
             "Anticipating SD" = sd(anticipating, na.rm = TRUE),
             "Reminiscing Mean" = mean(reminiscing, na.rm = TRUE),
             "Reminiscing SD" = sd(reminiscing, na.rm = TRUE)) %>% 
+  pander(split.tables = 200, caption = "PA = Positive Affectivity, NA = Negative Affectivity, StM = Savoring the Moment")
+
+
+```
+
+### LPP Descriptive Statistics by Block
+```{r}
+per_erp %>% 
+  group_by(block) %>% 
+  summarize("LPP Mean" = mean(LPP, na.rm = TRUE),
+            "LPP SD" = sd(LPP, na.rm = TRUE)) %>% 
   pander()
-
-
 ```
 
 
