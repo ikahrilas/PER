@@ -55,6 +55,7 @@ per_erp %>%
     geom_histogram(bins = 15) +
     ggtitle("PA Histogram")
 ```
+
 ```{r PA QQplot}
 per_erp %>% 
   group_by(pid) %>% 
@@ -75,6 +76,7 @@ shapiro.test(pid_pa$pos_affectivity) %>%
   pander()
 rm(pid_pa)
 ```
+
 It is not significant, suggesting that the distribution of PA does not significantly deviate from the normal distribution.
 
 ## Negative Affectivity
@@ -87,6 +89,7 @@ per_erp %>%
     geom_histogram(bins = 15) +
     ggtitle("NA Histogram")
 ```
+
 ```{r negative affectivity qqplot}
 per_erp %>% 
   group_by(pid) %>% 
@@ -96,6 +99,7 @@ per_erp %>%
   stat_qq_line() +
   ggtitle("NA QQPlot")
 ```
+
 ```{r shapiro-wilk test for NA}
 pid_na <- per_erp %>% 
   group_by(pid) %>% 
@@ -104,6 +108,7 @@ shapiro.test(pid_na$neg_affectivity) %>%
   pander()
 rm(pid_na)
 ```
+
 NA does not significantly deviate from the normal distribution.
 
 ## Savoring the Moment
@@ -116,6 +121,7 @@ per_erp %>%
     geom_histogram(bins = 25) +
     ggtitle("Savoring the Moment Histogram")
 ```
+
 ```{r StM qqplot}
 per_erp %>% 
   group_by(pid) %>% 
@@ -206,12 +212,9 @@ cases %>%
 # this outputs participants that have LPP amplitudes greater than 17, which denote the extreme cases we observed in the histograms and qqplots.
 map2(conditions, cond_names, ~ extreme_cases(.x, .y))
 ```
-Our extreme cases are 206201843 and 206201840. Let's inspect them
-```{r}
-per_erp %>% 
-  filter(pid %in% c(206201843, 206201840))
-```
-Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, they will be removed from the dataset
+
+Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, they will be removed from the dataset
+
 ```{r remove noisy participants}
 LPP_pid_rem <- LPP_by_pid %>% 
   filter(!(pid %in% c(206201843, 206201840)))
@@ -277,7 +280,8 @@ Box and whisker plots for each block
 
 ```{r visualize LPP by block}
 ggplot(per_erp_int, aes(block, LPP)) +
-  geom_boxplot()
+  geom_boxplot() +
+  ggtitle("Average LPP for each block")
 ```
 
 Scatterplot between the LPP positive watch condition and positive affectivity
@@ -287,7 +291,8 @@ per_erp_int %>%
   filter(block == "Pos_Watch") %>% 
   ggplot(., aes(pos_affectivity, LPP)) +
   geom_point() + 
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  ggtitle("Positive affectivity and LPP in positive watch condition")
 ```
 
 Scatterplot between the LPP positive increase condition and savoring the moment
@@ -297,7 +302,8 @@ per_erp_int %>%
   filter(block == "Pos_Inc") %>% 
   ggplot(., aes(savoring_moment, LPP)) +
   geom_point() + 
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  ggtitle("Savoring the moment and LPP in the positive increase condition")
 ```
 
 Scatterplot between LPP and arousal ratings
@@ -305,7 +311,8 @@ Scatterplot between LPP and arousal ratings
 ```{r arousal ratings and LPP}
 ggplot(per_erp_int, aes(arousal, LPP)) +
   geom_jitter() + 
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  ggtitle("Arousal ratings and LPP")
 ```
 
 Scatterplot between LPP and valence ratings
@@ -313,7 +320,8 @@ Scatterplot between LPP and valence ratings
 ```{r valence ratings and LPP}
 ggplot(per_erp_int, aes(valence, LPP)) +
   geom_jitter() + 
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  ggtitle("Valence ratings and LPP")
 ```
 
 Scatterplot between LPP and dificulty ratings
@@ -321,7 +329,8 @@ Scatterplot between LPP and dificulty ratings
 ```{r difficulty ratings and LPP}
 ggplot(per_erp_int, aes(difficulty, LPP)) +
   geom_jitter() + 
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  ggtitle("Difficulty ratings and LPP")
 ```
 
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
@@ -342,7 +351,8 @@ pos_watch_contrast <- full_join(pos_watch_contrast, tmp, by = "pid") %>%
 
 ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
   geom_point() +
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  ggtitle("Positive affectivity and the LPP contrast between the neutral watch and positive watch conditions")
 ```
 
 Derive contrasts between positive watch and positive increase conditions and observe relationship between this contrast and savoring the moment, which is in line with the study hypothesis that the LPP contrast between the positive watch and positive increase conditions will be moderated by savoring the moment.
@@ -363,5 +373,6 @@ pos_inc_contrast <- full_join(pos_inc_contrast, tmp, by = "pid") %>%
 
 ggplot(pos_inc_contrast, aes(savoring_moment, contrast)) +
   geom_point() +
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  ggtitle("Savoring the moment and the LPP contrast between the positive watch and positive increase conditions")
 ```
