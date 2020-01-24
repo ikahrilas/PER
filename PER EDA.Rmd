@@ -264,7 +264,7 @@ shapiro_LPP("Pos_Inc", "Positive Increase")
 shapiro_LPP("Pos_Watch", "Positive Watch")
 ```
 
-Some are still significantly different from the normal distribution, observation of the more extreme cases in the EEG run notes does not indicate any abnormalities. This indicates that a non-parametric technique, like bootstrapping, should be utilized for tests that assume normal data. 
+Some are still significantly different from the normal distribution. Observation of the more extreme cases in the EEG run notes does not indicate any abnormalities. This indicates that a non-parametric technique, like bootstrapping, should be utilized for tests that assume normal data. 
 
 ```{r manipulate the dataset to facilitate bivariate analyses}
 per_erp_int <- per_erp %>% 
@@ -291,6 +291,23 @@ per_erp_int %>%
   ggtitle("Positive affectivity and LPP in positive watch condition")
 ```
 
+Derive Pearson Product Moment correlation coefficient between positive watch LPP and positive affectivity
+
+```{r observe correlation}
+pos_watch_LPP <- per_erp_int %>% 
+  filter(block == "Pos_Watch") %>% 
+  select(LPP) %>%
+  pull()
+
+pos_affectivity <- per_erp_int %>% 
+  group_by(pid) %>% 
+  summarize(pos = mean(pos_affectivity)) %>% 
+  select(pos) %>% 
+  pull()
+
+cor.test(pos_watch_LPP, pos_affectivity) %>% pander()
+```
+
 Scatterplot between the LPP positive increase condition and savoring the moment
 
 ```{r savoring the moment and LPP}
@@ -302,6 +319,23 @@ per_erp_int %>%
   ggtitle("Savoring the moment and LPP in the positive increase condition")
 ```
 
+Derive Pearson Product Moment correlation coefficient between positive increase LPP and savoring the moment
+
+```{r observe correlation}
+pos_inc_LPP <- per_erp_int %>% 
+  filter(block == "Pos_Inc") %>% 
+  select(LPP) %>%
+  pull()
+
+savoring_moment <- per_erp_int %>% 
+  group_by(pid) %>% 
+  summarize(sav = mean(savoring_moment)) %>% 
+  select(sav) %>% 
+  pull()
+
+cor.test(pos_inc_LPP, savoring_moment) %>% pander()
+```
+
 Scatterplot between LPP and arousal ratings
 
 ```{r arousal ratings and LPP}
@@ -309,6 +343,12 @@ ggplot(per_erp_int, aes(arousal, LPP)) +
   geom_jitter() + 
   geom_smooth(method = "lm") +
   ggtitle("Arousal ratings and LPP")
+```
+
+Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
+
+```{r}
+cor.test(per_erp_int$LPP, per_erp_int$arousal) %>% pander()
 ```
 
 Scatterplot between LPP and valence ratings
@@ -320,6 +360,12 @@ ggplot(per_erp_int, aes(valence, LPP)) +
   ggtitle("Valence ratings and LPP")
 ```
 
+Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
+
+```{r}
+cor.test(per_erp_int$LPP, per_erp_int$valence) %>% pander()
+```
+
 Scatterplot between LPP and dificulty ratings
 
 ```{r difficulty ratings and LPP}
@@ -327,6 +373,12 @@ ggplot(per_erp_int, aes(difficulty, LPP)) +
   geom_jitter() + 
   geom_smooth(method = "lm") +
   ggtitle("Difficulty ratings and LPP")
+```
+
+Derive Pearson Product Moment correlation coefficient between LPP and difficulty ratings
+
+```{r}
+cor.test(per_erp_int$LPP, per_erp_int$difficulty) %>% pander()
 ```
 
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
@@ -351,6 +403,12 @@ ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
   ggtitle("Positive affectivity and the LPP contrast between the neutral watch and positive watch conditions")
 ```
 
+Derive Pearson Product Moment correlation coefficient between contrasts and positive affectivity
+
+```{r}
+cor.test(pos_watch_contrast$contrast, pos_watch_contrast$pos_affectivity) %>% pander()
+```
+
 Derive contrasts between positive watch and positive increase conditions and observe relationship between this contrast and savoring the moment, which is in line with the study hypothesis that the LPP contrast between the positive watch and positive increase conditions will be moderated by savoring the moment.
 
 ```{r savoring moment contrasts}
@@ -371,4 +429,10 @@ ggplot(pos_inc_contrast, aes(savoring_moment, contrast)) +
   geom_point() +
   geom_smooth(method = "lm") +
   ggtitle("Savoring the moment and the LPP contrast between the positive watch and positive increase conditions")
+```
+
+Derive Pearson Product Moment correlation coefficient between contrasts and savoring the moment
+
+```{r}
+cor.test(pos_inc_contrast$contrast, pos_inc_contrast$savoring_moment) %>% pander()
 ```
