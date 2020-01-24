@@ -298,4 +298,22 @@ ggplot(per_erp_int, aes(difficulty, LPP)) +
   geom_smooth(method = "lm")
 ```
 
+```{r}
+pos_watch_contrast <- per_erp_int %>% 
+  filter(block == "Neu_Watch") %>%
+  rename("LPP_neu_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_int %>% 
+  filter(block == "Pos_Watch") %>% 
+  rename("LPP_pos_watch" = LPP) %>% 
+  select(pid, LPP_pos_watch)
+
+pos_watch_contrast <- full_join(pos_watch_contrast, tmp, by = "pid") %>% 
+  mutate(contrast = LPP_pos_watch - LPP_neu_watch)
+
+ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
+  geom_point() +
+  geom_smooth()
+```
 
