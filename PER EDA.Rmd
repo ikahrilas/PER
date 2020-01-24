@@ -138,7 +138,7 @@ rm(pid_StM)
 
 ## LPP
 
-### Histograms, and QQplots for each block
+### Histograms and QQplots for each block
 ```{r histograms and qqplots for LPP for each block, warning = FALSE}
 LPP_by_pid <- per_erp %>% 
   group_by(pid, block) %>% 
@@ -194,7 +194,7 @@ shapiro_LPP("Pos_Inc", "Positive Increase")
 shapiro_LPP("Pos_Watch", "Positive Watch")
 ```
 
-Several of the conditions have LPPs that are non-normally distributed with some outtliers. Let's inspect these extreme cases.
+Several of the conditions have LPPs that are non-normally distributed with some outliers. Let's inspect these extreme cases.
 
 ```{r examine extreme cases, warning=FALSE,message=FALSE}
 extreme_cases <- function(condition, name) {
@@ -211,7 +211,7 @@ map2(conditions, cond_names, ~ extreme_cases(.x, .y))
 
 Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, they will be removed from the dataset. Visualizations and normality tests will be re-run.
 
-```{r remove noisy participants}
+```{r remove noisy participants, warning=FALSE, message=FALSE}
 LPP_pid_rem <- LPP_by_pid %>% 
   filter(!(pid %in% c(206201843, 206201840)))
 # re-run normality tests to see what's going on
@@ -233,7 +233,7 @@ map2(conditions, cond_names, ~ LPP_hist_qq(cond = .x, title = .y))
 
 ```{r shapiro wilk tests with filtered data}
 shapiro_LPP <- function(condition, title) {
-result <- shapiro.test(pull(filter(LPP_pid_rem, block == condition))) %>% 
+shapiro.test(pull(filter(LPP_pid_rem, block == condition))) %>%
   pander(caption = title)
 }
 
