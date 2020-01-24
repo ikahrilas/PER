@@ -37,7 +37,13 @@ per_erp %>%
 per_erp %>% 
   group_by(block) %>% 
   summarize("LPP Mean" = mean(LPP, na.rm = TRUE),
-            "LPP SD" = sd(LPP, na.rm = TRUE)) %>% 
+            "LPP SD" = sd(LPP, na.rm = TRUE),
+            "Valence Mean" = mean(valence, na.rm = TRUE),
+            "Valence SD" = sd(valence, na.rm = TRUE),
+            "Arousal Mean" = mean(arousal, na.rm = TRUE),
+            "Arousal SD" = sd(arousal, na.rm = TRUE), 
+            "Difficulty Mean" = mean(difficulty, na.rm = TRUE),
+            "Difficulty SD" = sd(difficulty, na.rm = TRUE)) %>% 
   pander()
 ```
 
@@ -400,7 +406,7 @@ pos_watch_contrast <- full_join(pos_watch_contrast, tmp, by = "pid") %>%
 ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  ggtitle("Positive affectivity and the LPP contrast between the neutral watch and positive watch conditions")
+  ggtitle("Positive affectivity and the LPP contrasts")
 ```
 
 Derive Pearson Product Moment correlation coefficient between contrasts and positive affectivity
@@ -428,7 +434,7 @@ pos_inc_contrast <- full_join(pos_inc_contrast, tmp, by = "pid") %>%
 ggplot(pos_inc_contrast, aes(savoring_moment, contrast)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  ggtitle("Savoring the moment and the LPP contrast between the positive watch and positive increase conditions")
+  ggtitle("Savoring the moment and the LPP contrasts")
 ```
 
 Derive Pearson Product Moment correlation coefficient between contrasts and savoring the moment
