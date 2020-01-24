@@ -278,12 +278,10 @@ per_erp_int <- per_erp %>%
     filter(!(pid %in% c(206201843, 206201840)))
 ```
 
-Box and whisker plots for each block
-
 ```{r visualize LPP by block}
 ggplot(per_erp_int, aes(block, LPP)) +
   geom_boxplot() +
-  ggtitle("Average LPP for each block")
+  ggtitle("Box and whisker plots for each block")
 ```
 
 Scatterplot between the LPP positive watch condition and positive affectivity
