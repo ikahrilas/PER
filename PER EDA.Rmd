@@ -27,11 +27,7 @@ per_erp %>%
             "NA Mean" = mean(neg_affectivity, na.rm = TRUE),
             "NA SD" = sd(neg_affectivity, na.rm = TRUE),
             "StM Mean" = mean(savoring_moment, na.rm = TRUE),
-            "StM SD" = sd(savoring_moment, na.rm = TRUE),
-            "Anticipating Mean" = mean(anticipating, na.rm = TRUE),
-            "Anticipating SD" = sd(anticipating, na.rm = TRUE),
-            "Reminiscing Mean" = mean(reminiscing, na.rm = TRUE),
-            "Reminiscing SD" = sd(reminiscing, na.rm = TRUE)) %>% 
+            "StM SD" = sd(savoring_moment, na.rm = TRUE)) %>% 
   pander(split.tables = 200, caption = "PA = Positive Affectivity, NA = Negative Affectivity, StM = Savoring the Moment")
 ```
 
@@ -118,7 +114,7 @@ per_erp %>%
   group_by(pid) %>% 
   summarize(savoring_moment = mean(savoring_moment, na.rm = TRUE)) %>% 
   ggplot(., (aes(savoring_moment))) +
-    geom_histogram(bins = 25) +
+    geom_histogram(bins = 14) +
     ggtitle("Savoring the Moment Histogram")
 ```
 
@@ -200,7 +196,7 @@ shapiro_LPP("Pos_Watch", "Positive Watch")
 
 Several of the conditions have LPPs that are non-normally distributed with some outtliers. Let's inspect these extreme cases.
 
-```{r examine extreme cases}
+```{r examine extreme cases, warning=FALSE,message=FALSE}
 extreme_cases <- function(condition, name) {
 (cases <- LPP_by_pid %>% 
   filter(block == condition,
@@ -213,7 +209,7 @@ cases %>%
 map2(conditions, cond_names, ~ extreme_cases(.x, .y))
 ```
 
-Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, they will be removed from the dataset
+Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, they will be removed from the dataset. Visualizations and normality tests will be re-run.
 
 ```{r remove noisy participants}
 LPP_pid_rem <- LPP_by_pid %>% 
