@@ -357,17 +357,17 @@ cor.test(per_erp_int$LPP, per_erp_int$arousal) %>% pander()
 
 Scatterplot between LPP and valence ratings
 
-```{r valence ratings and LPP}
+```{r valence ratings and LPP, warning=FALSE, message=FALSE}
 ggplot(per_erp_int, aes(valence, LPP)) +
   geom_jitter() + 
-  geom_smooth(method = "lm") +
+  geom_smooth() +
   ggtitle("Valence ratings and LPP")
 ```
 
 Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
 
 ```{r}
-cor.test(per_erp_int$LPP, per_erp_int$valence) %>% pander()
+pander(summary(lm(LPP ~ poly(valence, 2), data = per_erp_int)))
 ```
 
 Scatterplot between LPP and dificulty ratings
