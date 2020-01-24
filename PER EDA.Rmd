@@ -3,8 +3,8 @@ title: "Exploratory Data Analyses for PER Project"
 author: "Ian Kahrilas"
 date: "1/21/2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -293,7 +293,7 @@ per_erp_int %>%
 
 Derive Pearson Product Moment correlation coefficient between positive watch LPP and positive affectivity
 
-```{r observe correlation}
+```{r}
 pos_watch_LPP <- per_erp_int %>% 
   filter(block == "Pos_Watch") %>% 
   select(LPP) %>%
@@ -321,7 +321,7 @@ per_erp_int %>%
 
 Derive Pearson Product Moment correlation coefficient between positive increase LPP and savoring the moment
 
-```{r observe correlation}
+```{r}
 pos_inc_LPP <- per_erp_int %>% 
   filter(block == "Pos_Inc") %>% 
   select(LPP) %>%
