@@ -364,7 +364,7 @@ ggplot(per_erp_int, aes(valence, LPP)) +
   ggtitle("Valence ratings and LPP")
 ```
 
-Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
+Polynomial regression with LPP being predicted by valence scores.
 
 ```{r}
 pander(summary(lm(LPP ~ poly(valence, 2), data = per_erp_int)))
