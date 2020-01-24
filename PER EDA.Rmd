@@ -237,9 +237,35 @@ shapiro_LPP <- function(condition, title) {
 result <- shapiro.test(pull(filter(LPP_pid_rem, block == condition))) %>% 
   pander(caption = title)
 }
-map2(conditions, cond_names, ~ shapiro_LPP(.x, .y))
+
+shapiro_LPP("Neg_Dec", "Negative Decrease")
 ```
-Some are still significantly different from the normal distribution, but there are no outliers. 
+
+```{r}
+shapiro_LPP("Neg_Inc", "Negative Increase")
+```
+
+```{r}
+shapiro_LPP("Neg_Watch", "Negative Watch")
+```
+
+```{r}
+shapiro_LPP("Neu_Watch", "Neutral Watch")
+```
+
+```{r}
+shapiro_LPP("Pos_Dec", "Positive Decrease")
+```
+
+```{r}
+shapiro_LPP("Pos_Inc", "Positive Increase")
+```
+
+```{r}
+shapiro_LPP("Pos_Watch", "Positive Watch")
+```
+
+Some are still significantly different from the normal distribution, observation of the more extreme cases in the EEG run notes does not indicate any abnormalities. This indicates that a non-parametric technique, like bootstrapping, should be utilized for tests that assume normal data. 
 
 ```{r manipulate the dataset to facilitate bivariate analyses}
 per_erp_int <- per_erp %>% 
