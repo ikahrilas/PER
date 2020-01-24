@@ -239,5 +239,63 @@ result <- shapiro.test(pull(filter(LPP_pid_rem, block == condition))) %>%
 }
 map2(conditions, cond_names, ~ shapiro_LPP(.x, .y))
 ```
+Some are still significantly different from the normal distribution, but there are no outliers. 
 
-Next up, run bivariate analyses to observe nature of relationship between study variables.
+```{r manipulate the dataset to facilitate bivariate analyses}
+per_erp_int <- per_erp %>% 
+  select(pid, block, LPP, arousal:valence, anticipating:erq_suppression) %>% 
+    filter(!(pid %in% c(206201843, 206201840)))
+```
+
+Box and whisker plots for each block
+
+```{r visualize LPP by block}
+ggplot(per_erp_int, aes(block, LPP)) +
+  geom_boxplot()
+```
+
+Scatterplot between the LPP positive watch condition and positive affectivity
+
+```{r positive affectivity and LPP}
+per_erp_int %>% 
+  filter(block == "Pos_Watch") %>% 
+  ggplot(., aes(pos_affectivity, LPP)) +
+  geom_point() + 
+  geom_smooth(method = "lm")
+```
+
+Scatterplot between the LPP positive increase condition and savoring the moment
+
+```{r savoring the moment and LPP}
+per_erp_int %>% 
+  filter(block == "Pos_Inc") %>% 
+  ggplot(., aes(savoring_moment, LPP)) +
+  geom_point() + 
+  geom_smooth(method = "lm")
+```
+
+Scatterplot between LPP and arousal ratings
+
+```{r arousal ratings and LPP}
+ggplot(per_erp_int, aes(arousal, LPP)) +
+  geom_jitter() + 
+  geom_smooth(method = "lm")
+```
+
+Scatterplot between LPP and valence ratings
+
+```{r valence ratings and LPP}
+ggplot(per_erp_int, aes(valence, LPP)) +
+  geom_jitter() + 
+  geom_smooth(method = "lm")
+```
+
+Scatterplot between LPP and dificulty ratings
+
+```{r difficulty ratings and LPP}
+ggplot(per_erp_int, aes(difficulty, LPP)) +
+  geom_jitter() + 
+  geom_smooth(method = "lm")
+```
+
+
