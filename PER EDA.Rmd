@@ -158,6 +158,7 @@ LPP_by_pid %>%
 LPP_by_pid %>% 
   filter(block == cond) %>% 
   ggqqplot(., "LPP", title = title)
+invisible(cond)
 }
 
 conditions <- unique(LPP_by_pid$block)
@@ -215,7 +216,7 @@ cases %>%
 map2(conditions, cond_names, ~ extreme_cases(.x, .y))
 ```
 
-Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, they will be removed from the dataset. Visualizations and normality tests will be re-run.
+Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, their removal should be considered. Visualizations and normality tests will be re-run without these extreme cases.
 
 ```{r remove noisy participants, warning=FALSE, message=FALSE}
 LPP_pid_rem <- LPP_by_pid %>% 
@@ -229,6 +230,7 @@ LPP_pid_rem %>%
 LPP_pid_rem %>% 
   filter(block == cond) %>% 
   ggqqplot(., "LPP", title = title)
+invisible(cond)
 }
 
 conditions <- unique(LPP_by_pid$block)
@@ -270,10 +272,14 @@ shapiro_LPP("Pos_Inc", "Positive Increase")
 shapiro_LPP("Pos_Watch", "Positive Watch")
 ```
 
-Some are still significantly different from the normal distribution. Observation of the more extreme cases in the EEG run notes does not indicate any abnormalities. This indicates that a non-parametric technique, like bootstrapping, should be utilized for tests that assume normal data. 
+Some are still significantly different from the normal distribution, even with the removal of these cases. Observation of the other extreme cases in the EEG run notes does not indicate any abnormalities. This indicates that a non-parametric technique, like bootstrapping, should be utilized for tests that assume normal data. 
 
 ```{r manipulate the dataset to facilitate bivariate analyses}
 per_erp_int <- per_erp %>% 
+  select(pid, block, LPP, arousal:valence, anticipating:erq_suppression)
+
+# construct a second data frame without the two outlier cases
+per_erp_int_rem <- per_erp %>% 
   select(pid, block, LPP, arousal:valence, anticipating:erq_suppression) %>% 
     filter(!(pid %in% c(206201843, 206201840)))
 ```
@@ -282,6 +288,10 @@ per_erp_int <- per_erp %>%
 ggplot(per_erp_int, aes(block, LPP)) +
   geom_boxplot() +
   ggtitle("Box and whisker plots for each block")
+
+ggplot(per_erp_int_rem, aes(block, LPP)) +
+  geom_boxplot() +
+  ggtitle("Box and whisker plots for each block w/out outliers")
 ```
 
 Scatterplot between the LPP positive watch condition and positive affectivity
@@ -293,6 +303,13 @@ per_erp_int %>%
   geom_point() + 
   geom_smooth(method = "lm") +
   ggtitle("Positive affectivity and LPP in positive watch condition")
+
+per_erp_int_rem %>% 
+  filter(block == "Pos_Watch") %>% 
+  ggplot(., aes(pos_affectivity, LPP)) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  ggtitle("Positive affectivity and LPP in positive watch condition w/out outliers")
 ```
 
 Derive Pearson Product Moment correlation coefficient between positive watch LPP and positive affectivity
@@ -310,6 +327,19 @@ pos_affectivity <- per_erp_int %>%
   pull()
 
 cor.test(pos_watch_LPP, pos_affectivity) %>% pander()
+
+pos_watch_LPP_rem <- per_erp_int_rem %>% 
+  filter(block == "Pos_Watch") %>% 
+  select(LPP) %>% 
+  pull()
+
+pos_affectivity_rem <- per_erp_int_rem %>% 
+  group_by(pid) %>% 
+  summarize(pos = mean(pos_affectivity)) %>% 
+  select(pos) %>% 
+  pull()
+
+cor.test(pos_watch_LPP_rem, pos_affectivity_rem) %>% pander()
 ```
 
 Scatterplot between the LPP positive increase condition and savoring the moment
@@ -321,6 +351,13 @@ per_erp_int %>%
   geom_point() + 
   geom_smooth(method = "lm") +
   ggtitle("Savoring the moment and LPP in the positive increase condition")
+
+per_erp_int_rem %>% 
+  filter(block == "Pos_Inc") %>% 
+  ggplot(., aes(savoring_moment, LPP)) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  ggtitle("Savoring the moment and LPP in the positive increase condition w/out outliers")
 ```
 
 Derive Pearson Product Moment correlation coefficient between positive increase LPP and savoring the moment
@@ -338,6 +375,19 @@ savoring_moment <- per_erp_int %>%
   pull()
 
 cor.test(pos_inc_LPP, savoring_moment) %>% pander()
+
+pos_inc_LPP_rem <- per_erp_int_rem %>% 
+  filter(block == "Pos_Inc") %>% 
+  select(LPP) %>%
+  pull()
+
+savoring_moment_rem <- per_erp_int_rem %>% 
+  group_by(pid) %>% 
+  summarize(sav = mean(savoring_moment)) %>% 
+  select(sav) %>% 
+  pull()
+
+cor.test(pos_inc_LPP_rem, savoring_moment_rem) %>% pander()
 ```
 
 Scatterplot between LPP and arousal ratings
@@ -347,12 +397,19 @@ ggplot(per_erp_int, aes(arousal, LPP)) +
   geom_jitter() + 
   geom_smooth(method = "lm") +
   ggtitle("Arousal ratings and LPP")
+
+ggplot(per_erp_int_rem, aes(arousal, LPP)) +
+  geom_jitter() +
+  geom_smooth(method = "lm") + 
+  ggtitle("Arousal ratings and LPP w/out outliers")
 ```
 
 Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
 
 ```{r}
 cor.test(per_erp_int$LPP, per_erp_int$arousal) %>% pander()
+
+cor.test(per_erp_int_rem$LPP, per_erp_int_rem$arousal) %>% pander()
 ```
 
 Scatterplot between LPP and valence ratings
@@ -362,6 +419,11 @@ ggplot(per_erp_int, aes(valence, LPP)) +
   geom_jitter() + 
   geom_smooth() +
   ggtitle("Valence ratings and LPP")
+
+ggplot(per_erp_int_rem, aes(valence, LPP)) +
+  geom_jitter() + 
+  geom_smooth() +
+  ggtitle("Valence ratings and LPP w/out outliers")
 ```
 
 Polynomial regression with LPP being predicted by valence scores.
@@ -370,19 +432,32 @@ Polynomial regression with LPP being predicted by valence scores.
 pander(summary(lm(LPP ~ poly(valence, 2), data = per_erp_int)))
 ```
 
-Scatterplot between LPP and dificulty ratings
+... and without outliers
+
+```{r}
+pander(summary(lm(LPP ~ poly(valence, 2), data = per_erp_int_rem)))
+```
+
+Scatterplot between LPP and dificulty ratings. Please note that the two scatterplots appear different since random noise was added to each data point to prevent overplotting.
 
 ```{r difficulty ratings and LPP}
 ggplot(per_erp_int, aes(difficulty, LPP)) +
   geom_jitter() + 
   geom_smooth(method = "lm") +
   ggtitle("Difficulty ratings and LPP")
+
+ggplot(per_erp_int, aes(difficulty, LPP)) +
+  geom_jitter() + 
+  geom_smooth(method = "lm") +
+  ggtitle("Difficulty ratings and LPP w/out outliers")
 ```
 
 Derive Pearson Product Moment correlation coefficient between LPP and difficulty ratings
 
 ```{r}
 cor.test(per_erp_int$LPP, per_erp_int$difficulty) %>% pander()
+
+cor.test(per_erp_int_rem$LPP, per_erp_int_rem$difficulty) %>% pander()
 ```
 
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
@@ -405,6 +480,24 @@ ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
   geom_point() +
   geom_smooth(method = "lm") +
   ggtitle("Positive affectivity and the LPP contrasts")
+
+pos_watch_contrast_rem <- per_erp_int_rem %>% 
+  filter(block == "Neu_Watch") %>%
+  rename("LPP_neu_watch" = LPP) %>% 
+  select(-block)
+
+tmp_rem <- per_erp_int_rem %>% 
+  filter(block == "Pos_Watch") %>% 
+  rename("LPP_pos_watch" = LPP) %>% 
+  select(pid, LPP_pos_watch)
+
+pos_watch_contrast_rem <- full_join(pos_watch_contrast_rem, tmp_rem, by = "pid") %>% 
+  mutate(contrast = LPP_pos_watch - LPP_neu_watch)
+
+ggplot(pos_watch_contrast_rem, aes(pos_affectivity, contrast)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("Positive affectivity and the LPP contrasts w/out outliers")
 ```
 
 Derive Pearson Product Moment correlation coefficient between contrasts and positive affectivity
@@ -433,10 +526,30 @@ ggplot(pos_inc_contrast, aes(savoring_moment, contrast)) +
   geom_point() +
   geom_smooth(method = "lm") +
   ggtitle("Savoring the moment and the LPP contrasts")
+
+pos_inc_contrast_rem <- per_erp_int_rem %>% 
+  filter(block == "Pos_Watch") %>%
+  rename("LPP_pos_watch" = LPP) %>% 
+  select(-block)
+
+tmp_rem <- per_erp_int_rem %>% 
+  filter(block == "Pos_Inc") %>% 
+  rename("LPP_pos_inc" = LPP) %>% 
+  select(pid, LPP_pos_inc)
+
+pos_inc_contrast_rem <- full_join(pos_inc_contrast_rem, tmp_rem, by = "pid") %>% 
+  mutate(contrast = LPP_pos_inc - LPP_pos_watch)
+
+ggplot(pos_inc_contrast_rem, aes(savoring_moment, contrast)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("Savoring the moment and the LPP contrasts w/out outliers")
 ```
 
 Derive Pearson Product Moment correlation coefficient between contrasts and savoring the moment
 
 ```{r}
 cor.test(pos_inc_contrast$contrast, pos_inc_contrast$savoring_moment) %>% pander()
+
+cor.test(pos_inc_contrast_rem$contrast, pos_inc_contrast_rem$savoring_moment) %>% pander()
 ```
