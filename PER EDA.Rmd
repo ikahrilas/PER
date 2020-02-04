@@ -349,14 +349,14 @@ per_erp_int %>%
   filter(block == "Pos_Inc") %>% 
   ggplot(., aes(savoring_moment, LPP)) +
   geom_point() + 
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "loess") +
   ggtitle("Savoring the moment and LPP in the positive increase condition")
 
 per_erp_int_rem %>% 
   filter(block == "Pos_Inc") %>% 
   ggplot(., aes(savoring_moment, LPP)) +
   geom_point() + 
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "loess") +
   ggtitle("Savoring the moment and LPP in the positive increase condition \n w/out outliers")
 ```
 
@@ -440,7 +440,7 @@ pander(summary(lm(LPP ~ poly(valence, 2), data = per_erp_int_rem)))
 
 Scatterplot between LPP and dificulty ratings.
 
-```{r difficulty ratings and LPP}
+```{r difficulty ratings and LPP, warning=FALSE, message=FALSE}
 ggplot(per_erp_int, aes(difficulty, LPP)) +
   geom_jitter() + 
   geom_smooth(method = "lm") +
@@ -454,7 +454,7 @@ ggplot(per_erp_int, aes(difficulty, LPP)) +
 
 Derive Pearson Product Moment correlation coefficient between LPP and difficulty ratings
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 cor.test(per_erp_int$LPP, per_erp_int$difficulty) %>% pander()
 
 cor.test(per_erp_int_rem$LPP, per_erp_int_rem$difficulty) %>% pander()
@@ -462,7 +462,7 @@ cor.test(per_erp_int_rem$LPP, per_erp_int_rem$difficulty) %>% pander()
 
 Observe the relationship between valence, arousal, and difficulty ratings.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 ggplot(per_erp_int, aes(valence, difficulty)) +
   geom_jitter() + 
   geom_smooth(method = "loess") +
@@ -476,18 +476,18 @@ ggplot(per_erp_int_rem, aes(valence, difficulty)) +
 
 Polynomial regressions
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 pander(summary(lm(valence ~ poly(difficulty, 2), data = per_erp_int)))
 ```
 
 Without outliers
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 pander(summary(lm(valence ~ poly(difficulty, 2), data = per_erp_int_rem)))
 ```
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 ggplot(per_erp_int, aes(valence, arousal)) +
   geom_jitter() + 
   geom_smooth(method = "loess") +
@@ -502,31 +502,31 @@ ggplot(per_erp_int_rem, aes(valence, arousal)) +
 
 Polynomial regressions
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 pander(summary(lm(valence ~ poly(arousal, 2), data = per_erp_int)))
 ```
 
 Without outliers
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 pander(summary(lm(valence ~ poly(arousal, 2), data = per_erp_int_rem)))
 ```
 
-```{r arousal ratings and LPP}
+```{r, message=FALSE, warning=FALSE}
 ggplot(per_erp_int, aes(arousal, difficulty)) +
   geom_jitter() + 
   geom_smooth(method = "loess") +
-  ggtitle("Arousal ratings and LPP")
+  ggtitle("Arousal and difficulty ratings")
 
 ggplot(per_erp_int_rem, aes(arousal, difficulty)) +
   geom_jitter() +
   geom_smooth(method = "loess") + 
-  ggtitle("Arousal ratings and LPP w/out outliers")
+  ggtitle("Arousal and difficulty ratings w/out outliers")
 ```
 
 Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 cor.test(per_erp_int$difficulty, per_erp_int$arousal) %>% pander()
 
 cor.test(per_erp_int_rem$difficulty, per_erp_int_rem$arousal) %>% pander()
