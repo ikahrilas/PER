@@ -213,10 +213,12 @@ cases %>%
   pull()
 }
 # this outputs participants that have LPP amplitudes greater than 17, which denote the extreme cases we observed in the histograms and qqplots.
-map2(conditions, cond_names, ~ extreme_cases(.x, .y))
+map2(conditions, cond_names, ~ extreme_cases(.x, .y)) %>% 
+  unlist() %>% 
+  unique()
 ```
 
-Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task and produced noisy data. Therefore, their removal should be considered. Visualizations and normality tests will be re-run without these extreme cases.
+Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task. Review of their raw data in BESA indicated abnormalities with participant 206201843. However, participant 206201840's data appeared valid. Therefore, participant 206201843 will be removed, but participant 206201840 will remain. Visualizations and normality tests will be re-run without 206201843.
 
 ```{r remove noisy participants, warning=FALSE, message=FALSE}
 LPP_pid_rem <- LPP_by_pid %>% 
