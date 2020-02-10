@@ -461,22 +461,30 @@ summary(mod_val_arousal)
 
 The MLM analyses confirms this relationship.
 
+## Arousal and difficulty ratings
+
 ```{r, message=FALSE, warning=FALSE}
 ggplot(per_erp_int, aes(arousal, difficulty)) +
-  geom_jitter() + 
-  geom_smooth(method = "loess") +
+  geom_jitter(height = 0.3, width = 0.3) + 
   ggtitle("Arousal and difficulty ratings")
-
-ggplot(per_erp_int_rem, aes(arousal, difficulty)) +
-  geom_jitter() +
-  geom_smooth(method = "loess") + 
-  ggtitle("Arousal and difficulty ratings w/out outliers")
 ```
 
-Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
+There is perhaps a curvilinear relationship. Let's model a locally weighted (green) and polynomial regression (red) line on the plot to see what the relationship is, and how well the polynomial regression line fits compared to the locally weighted one.
+
+```{r}
+ggplot(per_erp_int, aes(arousal, difficulty)) +
+  geom_jitter(height = 0.3, width = 0.3) + 
+  geom_smooth(color = "green", alpha = 0.2) +
+  stat_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red", alpha = 0.2) +
+  ggtitle("Arousal and difficulty ratings")
+```
+
+It looks like the curvilnear relationship may be a good fit. Let's test it with an MLM analysis
 
 ```{r, warning=FALSE, message=FALSE}
-cor.test(per_erp_int$difficulty, per_erp_int$arousal) %>% pander()
+mod_diff_arousal <- lmerTest::lmer(difficulty ~ poly(arousal, 2) + (1|pid), data = per_erp_int)
 
-cor.test(per_erp_int_rem$difficulty, per_erp_int_rem$arousal) %>% pander()
+summary(mod_diff_arousal)
 ```
+
+Indeed, the results indicated that the relationship is curvilinear.
