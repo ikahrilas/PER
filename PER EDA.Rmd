@@ -47,6 +47,8 @@ per_erp %>%
   pander()
 ```
 
+# Normality Tests
+
 ## Positive Affectivity
 
 ```{r PA histogram}
@@ -76,7 +78,6 @@ pid_pa <- per_erp %>%
   summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE))
 shapiro.test(pid_pa$pos_affectivity) %>% 
   pander()
-rm(pid_pa)
 ```
 
 It is not significant, suggesting that the distribution of PA does not significantly deviate from the normal distribution.
@@ -108,7 +109,6 @@ pid_na <- per_erp %>%
   summarize(neg_affectivity = mean(neg_affectivity, na.rm = TRUE))
 shapiro.test(pid_na$neg_affectivity) %>% 
   pander()
-rm(pid_na)
 ```
 
 NA does not significantly deviate from the normal distribution.
@@ -139,7 +139,6 @@ pid_StM <- per_erp %>%
   summarize(savoring_moment = mean(savoring_moment, na.rm = TRUE))
 shapiro.test(pid_StM$savoring_moment) %>% 
   pander()
-rm(pid_StM)
 ```
 
 ## LPP
@@ -274,7 +273,7 @@ shapiro_LPP("Pos_Inc", "Positive Increase")
 shapiro_LPP("Pos_Watch", "Positive Watch")
 ```
 
-Some are still significantly different from the normal distribution, even with the removal of the extreme case. This indicates that a non-parametric technique, should be utilized for tests that assume normal data. 
+Some are still significantly different from the normal distribution, even with the removal of the extreme case. This indicates that a non-parametric technique should be utilized for tests that assume normal data. 
 
 ```{r manipulate the dataset to facilitate bivariate analyses}
 # construct a second data frame without the outlier cases
@@ -283,216 +282,17 @@ per_erp_int <- per_erp %>%
     filter(!(pid %in% c(206201843)))
 ```
 
+# Bivariate Relationships
+
+## LPP and block condition
+
 ```{r visualize LPP by block}
 ggplot(per_erp_int, aes(block, LPP)) +
   geom_boxplot() +
   ggtitle("Box and whisker plots for each block")
 ```
 
-Scatterplot between the LPP positive watch condition and positive affectivity
-
-```{r positive affectivity and LPP}
-per_erp_int %>% 
-  filter(block == "Pos_Watch") %>% 
-  ggplot(., aes(pos_affectivity, LPP)) +
-  geom_point() + 
-  geom_smooth(span = 0.4) +
-  ggtitle("Positive affectivity and LPP in positive watch condition")
-```
-
-Derive Pearson Product Moment correlation coefficient between positive watch LPP and positive affectivity
-
-```{r}
-pos_watch_LPP <- per_erp_int %>% 
-  filter(block == "Pos_Watch") %>% 
-  select(LPP) %>%
-  pull()
-
-pos_affectivity <- per_erp_int %>% 
-  group_by(pid) %>% 
-  summarize(pos = mean(pos_affectivity)) %>% 
-  select(pos) %>% 
-  pull()
-
-cor.test(pos_watch_LPP, pos_affectivity) %>% pander()
-```
-
-Scatterplot between the LPP positive increase condition and savoring the moment
-
-```{r savoring the moment and LPP}
-per_erp_int %>% 
-  filter(block == "Pos_Inc") %>% 
-  ggplot(., aes(savoring_moment, LPP)) +
-  geom_point() + 
-  ggtitle("Savoring the moment and LPP in the positive increase condition")
-```
-
-The relationship between these variables doesn't appear to be 
-
-```{r}
-pos_inc_LPP <- per_erp_int %>% 
-  filter(block == "Pos_Inc") %>% 
-  select(LPP) %>%
-  pull()
-
-savoring_moment <- per_erp_int %>% 
-  group_by(pid) %>% 
-  summarize(sav = mean(savoring_moment)) %>% 
-  select(sav) %>% 
-  pull()
-
-cor.test(pos_inc_LPP, savoring_moment) %>% pander()
-
-mod <- lm(LPP ~ savoring_moment, data = per_erp_int)
-mod_2 <- lm(LPP ~ poly(savoring_moment, 3), data = per_erp_int)
-
-AIC(mod)
-AIC(mod_2)
-anova(mod, mod_2)
-```
-
-Scatterplot between LPP and arousal ratings
-
-```{r arousal ratings and LPP}
-ggplot(per_erp_int, aes(arousal, LPP)) +
-  geom_jitter() + 
-  geom_smooth(method = "lm") +
-  ggtitle("Arousal ratings and LPP")
-
-ggplot(per_erp_int_rem, aes(arousal, LPP)) +
-  geom_jitter() +
-  geom_smooth(method = "lm") + 
-  ggtitle("Arousal ratings and LPP w/out outliers")
-```
-
-Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
-
-```{r}
-cor.test(per_erp_int$LPP, per_erp_int$arousal) %>% pander()
-
-cor.test(per_erp_int_rem$LPP, per_erp_int_rem$arousal) %>% pander()
-```
-
-Scatterplot between LPP and valence ratings
-
-```{r valence ratings and LPP, warning=FALSE, message=FALSE}
-ggplot(per_erp_int, aes(valence, LPP)) +
-  geom_jitter() + 
-  geom_smooth() +
-  ggtitle("Valence ratings and LPP")
-
-ggplot(per_erp_int_rem, aes(valence, LPP)) +
-  geom_jitter() + 
-  geom_smooth() +
-  ggtitle("Valence ratings and LPP w/out outliers")
-```
-
-Polynomial regression with LPP being predicted by valence scores.
-
-```{r}
-pander(summary(lm(LPP ~ poly(valence, 2), data = per_erp_int)))
-```
-
-... and without outliers
-
-```{r}
-pander(summary(lm(LPP ~ poly(valence, 2), data = per_erp_int_rem)))
-```
-
-Scatterplot between LPP and dificulty ratings.
-
-```{r difficulty ratings and LPP, warning=FALSE, message=FALSE}
-ggplot(per_erp_int, aes(difficulty, LPP)) +
-  geom_jitter() + 
-  geom_smooth(method = "lm") +
-  ggtitle("Difficulty ratings and LPP")
-
-ggplot(per_erp_int, aes(difficulty, LPP)) +
-  geom_jitter() + 
-  geom_smooth(method = "lm") +
-  ggtitle("Difficulty ratings and LPP w/out outliers")
-```
-
-Derive Pearson Product Moment correlation coefficient between LPP and difficulty ratings
-
-```{r, warning=FALSE, message=FALSE}
-cor.test(per_erp_int$LPP, per_erp_int$difficulty) %>% pander()
-
-cor.test(per_erp_int_rem$LPP, per_erp_int_rem$difficulty) %>% pander()
-```
-
-Observe the relationship between valence, arousal, and difficulty ratings.
-
-```{r, message=FALSE, warning=FALSE}
-ggplot(per_erp_int, aes(valence, difficulty)) +
-  geom_jitter() + 
-  geom_smooth(method = "loess") +
-  ggtitle("Valence and difficulty ratings")
-
-ggplot(per_erp_int_rem, aes(valence, difficulty)) +
-  geom_jitter() + 
-  geom_smooth(method = "loess") +
-  ggtitle("Valence and difficulty ratings w/out outliers")
-```
-
-Polynomial regressions
-
-```{r, message=FALSE, warning=FALSE}
-pander(summary(lm(valence ~ poly(difficulty, 2), data = per_erp_int)))
-```
-
-Without outliers
-
-```{r, message=FALSE, warning=FALSE}
-pander(summary(lm(valence ~ poly(difficulty, 2), data = per_erp_int_rem)))
-```
-
-
-```{r, message=FALSE, warning=FALSE}
-ggplot(per_erp_int, aes(valence, arousal)) +
-  geom_jitter() + 
-  geom_smooth(method = "loess") +
-  ggtitle("Valence and arousal ratings")
-
-ggplot(per_erp_int_rem, aes(valence, arousal)) +
-  geom_jitter() + 
-  geom_smooth(method = "loess") +
-  ggtitle("Valence and arousal ratings w/out outliers")
-```
-
-
-Polynomial regressions
-
-```{r, message=FALSE, warning=FALSE}
-pander(summary(lm(valence ~ poly(arousal, 2), data = per_erp_int)))
-```
-
-Without outliers
-
-```{r, message=FALSE, warning=FALSE}
-pander(summary(lm(valence ~ poly(arousal, 2), data = per_erp_int_rem)))
-```
-
-```{r, message=FALSE, warning=FALSE}
-ggplot(per_erp_int, aes(arousal, difficulty)) +
-  geom_jitter() + 
-  geom_smooth(method = "loess") +
-  ggtitle("Arousal and difficulty ratings")
-
-ggplot(per_erp_int_rem, aes(arousal, difficulty)) +
-  geom_jitter() +
-  geom_smooth(method = "loess") + 
-  ggtitle("Arousal and difficulty ratings w/out outliers")
-```
-
-Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
-
-```{r, warning=FALSE, message=FALSE}
-cor.test(per_erp_int$difficulty, per_erp_int$arousal) %>% pander()
-
-cor.test(per_erp_int_rem$difficulty, per_erp_int_rem$arousal) %>% pander()
-```
-
+## LPP and Positive Affectivity
 
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
 
@@ -512,33 +312,16 @@ pos_watch_contrast <- full_join(pos_watch_contrast, tmp, by = "pid") %>%
 
 ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
   geom_point() +
-  geom_smooth(method = "lm") +
-  ggtitle("Positive affectivity and the LPP contrasts")
-
-pos_watch_contrast_rem <- per_erp_int_rem %>% 
-  filter(block == "Neu_Watch") %>%
-  rename("LPP_neu_watch" = LPP) %>% 
-  select(-block)
-
-tmp_rem <- per_erp_int_rem %>% 
-  filter(block == "Pos_Watch") %>% 
-  rename("LPP_pos_watch" = LPP) %>% 
-  select(pid, LPP_pos_watch)
-
-pos_watch_contrast_rem <- full_join(pos_watch_contrast_rem, tmp_rem, by = "pid") %>% 
-  mutate(contrast = LPP_pos_watch - LPP_neu_watch)
-
-ggplot(pos_watch_contrast_rem, aes(pos_affectivity, contrast)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  ggtitle("Positive affectivity and the LPP contrasts w/out outliers")
+  ggtitle("Positive affectivity and contrast between \nNeutral Watch and Positive Watch")
 ```
 
-Derive Pearson Product Moment correlation coefficient between contrasts and positive affectivity
+There doesn't appear to be any relationship between the two. We can derive Pearson Product Moment correlation coefficient between contrasts and positive affectivity to validate this.
 
 ```{r}
 cor.test(pos_watch_contrast$contrast, pos_watch_contrast$pos_affectivity) %>% pander()
 ```
+
+## LPP and savoring the  moment
 
 Derive contrasts between positive watch and positive increase conditions and observe relationship between this contrast and savoring the moment, which is in line with the study hypothesis that the LPP contrast between the positive watch and positive increase conditions will be moderated by savoring the moment.
 
@@ -557,33 +340,143 @@ pos_inc_contrast <- full_join(pos_inc_contrast, tmp, by = "pid") %>%
   mutate(contrast = LPP_pos_inc - LPP_pos_watch)
 
 ggplot(pos_inc_contrast, aes(savoring_moment, contrast)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  ggtitle("Savoring the moment and the LPP contrasts")
-
-pos_inc_contrast_rem <- per_erp_int_rem %>% 
-  filter(block == "Pos_Watch") %>%
-  rename("LPP_pos_watch" = LPP) %>% 
-  select(-block)
-
-tmp_rem <- per_erp_int_rem %>% 
-  filter(block == "Pos_Inc") %>% 
-  rename("LPP_pos_inc" = LPP) %>% 
-  select(pid, LPP_pos_inc)
-
-pos_inc_contrast_rem <- full_join(pos_inc_contrast_rem, tmp_rem, by = "pid") %>% 
-  mutate(contrast = LPP_pos_inc - LPP_pos_watch)
-
-ggplot(pos_inc_contrast_rem, aes(savoring_moment, contrast)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  ggtitle("Savoring the moment and the LPP contrasts w/out outliers")
+  geom_jitter() +
+  ggtitle("Momentary savoring and contrast between \nPositive Watch and Positive Increase")
 ```
 
-Derive Pearson Product Moment correlation coefficient between contrasts and savoring the moment
+Again, there does not appear to be a relationship between the two variables. Derive Pearson Product Moment correlation coefficient between contrasts and savoring the moment
 
 ```{r}
 cor.test(pos_inc_contrast$contrast, pos_inc_contrast$savoring_moment) %>% pander()
+```
 
-cor.test(pos_inc_contrast_rem$contrast, pos_inc_contrast_rem$savoring_moment) %>% pander()
+## LPP and arousal ratings
+
+Scatterplot between LPP and arousal ratings
+
+```{r arousal ratings and LPP}
+ggplot(per_erp_int, aes(arousal, LPP)) +
+  geom_jitter(width = 0.1, height = 0.1) +
+  ggtitle("Arousal ratings and LPP")
+```
+
+There appears to be a positive linear relationship between the two. Let's test a linear model using MLM to account for the clustering between participants.
+
+```{r}
+mod_arousal <- lmerTest::lmer(LPP ~ arousal + (1|pid), data = per_erp_int)
+
+summary(mod_arousal)
+```
+
+Results indicate a significant linear relationship between arousal and LPP.
+
+## LPP and valence ratings
+
+Scatterplot between LPP and valence ratings
+
+```{r valence ratings and LPP, warning=FALSE, message=FALSE}
+ggplot(per_erp_int, aes(valence, LPP)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  ggtitle("Valence ratings and LPP")
+```
+
+At first glance, there does not appear to be a relationship. However, it is hypothesized that more negatively- and positively-valenced images may positively correlate with LPP. Let's test this by fitting a polynomial regression line through the scatterplot.
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(per_erp_int, aes(valence, LPP)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
+  ggtitle("Valence ratings and LPP")
+```
+
+Now, conduct a polynomial regression using MLM.
+
+```{r}
+mod_valence <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_int)
+
+summary(mod_valence)
+```
+
+Results indicate that there is a curvilinear relationship between LPP and arousal.
+
+## LPP and difficulty ratings
+
+Scatterplot between LPP and dificulty ratings.
+
+```{r difficulty ratings and LPP, warning=FALSE, message=FALSE}
+ggplot(per_erp_int, aes(difficulty, LPP)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  ggtitle("Difficulty ratings and LPP")
+```
+
+There may be a slight linear relationship, though it is weak. Let's try fittin a linear model to test this.
+
+```{r, warning=FALSE, message=FALSE}
+mod_difficulty <- lmerTest::lmer(LPP ~ difficulty + (1|pid), data = per_erp_int)
+
+summary(mod_difficulty)
+```
+
+There does appear to be a positive relationship between the difficulty of the task and LPP.
+
+## Valence and difficulty ratings
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(per_erp_int, aes(valence, difficulty)) +
+  geom_jitter(height = 0.2, width = 0.2) + 
+  ggtitle("Valence and difficulty ratings")
+```
+
+There doesn't appear to be a relationship between the two, but we can test this.
+
+```{r, message=FALSE, warning=FALSE}
+mod_diff_val <- lmerTest::lmer(difficulty ~ valence + (1|pid), data = per_erp_int)
+
+summary(mod_diff_val)
+
+library(lme4)
+```
+
+I stand corrected. There is a relationship. Let's check the effect size:
+
+```{r}
+effectsize::standardize_parameters(mod_diff_val) %>% pander()
+```
+
+## Valence and arousal
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(per_erp_int, aes(valence, arousal)) +
+  geom_jitter(width = 0.3, height = 0.3) + 
+  ggtitle("Valence and arousal ratings")
+```
+
+It looks like there is a strong curvilinear relationship between the two. 
+
+```{r, message=FALSE, warning=FALSE}
+mod_val_arousal <- lmerTest::lmer(arousal ~ poly(valence, 2) + (1|pid), data = per_erp_int)
+
+summary(mod_val_arousal)
+```
+
+The MLM analyses confirms this relationship.
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(per_erp_int, aes(arousal, difficulty)) +
+  geom_jitter() + 
+  geom_smooth(method = "loess") +
+  ggtitle("Arousal and difficulty ratings")
+
+ggplot(per_erp_int_rem, aes(arousal, difficulty)) +
+  geom_jitter() +
+  geom_smooth(method = "loess") + 
+  ggtitle("Arousal and difficulty ratings w/out outliers")
+```
+
+Derive Pearson Product Moment correlation coefficient between LPP and arousal ratings
+
+```{r, warning=FALSE, message=FALSE}
+cor.test(per_erp_int$difficulty, per_erp_int$arousal) %>% pander()
+
+cor.test(per_erp_int_rem$difficulty, per_erp_int_rem$arousal) %>% pander()
 ```
