@@ -292,6 +292,16 @@ ggplot(per_erp_int, aes(block, LPP)) +
   ggtitle("Box and whisker plots for each block")
 ```
 
+```{r ANOVAs}
+per_erp_int$block <- as.factor(per_erp_int$block)
+per_erp_int$block <- relevel(per_erp_int$block, "Neu_Watch")
+per_erp_int_watch <- per_erp_int %>% 
+  filter(block %in% c("Neu_Watch", "Pos_Watch", "Neg_Watch"))
+mod_block <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_int_watch)
+print(psycho::analyze(mod_block))
+```
+
+
 ## LPP and Positive Affectivity
 
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
@@ -448,6 +458,8 @@ effectsize::standardize_parameters(mod_diff_val) %>% pander()
 ```{r, message=FALSE, warning=FALSE}
 ggplot(per_erp_int, aes(valence, arousal)) +
   geom_jitter(width = 0.3, height = 0.3) + 
+  geom_smooth(method = "lm") +
+  stat_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red") +
   ggtitle("Valence and arousal ratings")
 ```
 
