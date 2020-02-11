@@ -1,7 +1,7 @@
 ---
 title: "Exploratory Data Analyses for PER Project"
 author: "Ian Kahrilas"
-date: "1/23/2020"
+date: "2/10/2020"
 output:
   pdf_document: default
   html_document: default
@@ -315,7 +315,7 @@ ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
   ggtitle("Positive affectivity and contrast between \nNeutral Watch and Positive Watch")
 ```
 
-There doesn't appear to be any relationship between the two. We can derive Pearson Product Moment correlation coefficient between contrasts and positive affectivity to validate this.
+There doesn't appear to be any relationship between the two. We can derive a Pearson Product Moment correlation coefficient between contrasts and positive affectivity to validate this.
 
 ```{r}
 cor.test(pos_watch_contrast$contrast, pos_watch_contrast$pos_affectivity) %>% pander()
@@ -344,7 +344,7 @@ ggplot(pos_inc_contrast, aes(savoring_moment, contrast)) +
   ggtitle("Momentary savoring and contrast between \nPositive Watch and Positive Increase")
 ```
 
-Again, there does not appear to be a relationship between the two variables. Derive Pearson Product Moment correlation coefficient between contrasts and savoring the moment
+Again, there does not appear to be a relationship between the two variables. Let's derive Pearson Product Moment correlation coefficient between the contrast and savoring the moment to confirm.
 
 ```{r}
 cor.test(pos_inc_contrast$contrast, pos_inc_contrast$savoring_moment) %>% pander()
@@ -409,7 +409,7 @@ ggplot(per_erp_int, aes(difficulty, LPP)) +
   ggtitle("Difficulty ratings and LPP")
 ```
 
-There may be a slight linear relationship, though it is weak. Let's try fittin a linear model to test this.
+There may be a slight linear relationship, though it is weak. Let's try fitting a linear model to test this.
 
 ```{r, warning=FALSE, message=FALSE}
 mod_difficulty <- lmerTest::lmer(LPP ~ difficulty + (1|pid), data = per_erp_int)
@@ -459,7 +459,7 @@ mod_val_arousal <- lmerTest::lmer(arousal ~ poly(valence, 2) + (1|pid), data = p
 summary(mod_val_arousal)
 ```
 
-The MLM analyses confirms this relationship.
+The MLM analysis confirms this relationship.
 
 ## Arousal and difficulty ratings
 
@@ -471,7 +471,7 @@ ggplot(per_erp_int, aes(arousal, difficulty)) +
 
 There is perhaps a curvilinear relationship. Let's model a locally weighted (green) and polynomial regression (red) line on the plot to see what the relationship is, and how well the polynomial regression line fits compared to the locally weighted one.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 ggplot(per_erp_int, aes(arousal, difficulty)) +
   geom_jitter(height = 0.3, width = 0.3) + 
   geom_smooth(color = "green", alpha = 0.2) +
