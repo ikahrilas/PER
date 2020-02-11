@@ -297,8 +297,12 @@ per_erp_int$block <- as.factor(per_erp_int$block)
 per_erp_int$block <- relevel(per_erp_int$block, "Neu_Watch")
 per_erp_int_watch <- per_erp_int %>% 
   filter(block %in% c("Neu_Watch", "Pos_Watch", "Neg_Watch"))
-mod_block <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_int_watch)
+mod_block <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_int)
 print(psycho::analyze(mod_block))
+mod_block_arousal <- lmerTest::lmer(arousal ~ block + (1|pid), data = per_erp_int)
+psycho::analyze(mod_block_arousal)
+mod_block_valence <- lmerTest::lmer(valence ~ block + (1|pid), data = per_erp_int)
+psycho::analyze(mod_block_valence)
 ```
 
 
