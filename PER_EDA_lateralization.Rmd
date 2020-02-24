@@ -1,0 +1,44 @@
+---
+title: "PER EDA Lateralization"
+author: "Ian Kahrilas"
+date: "2/21/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# load in erp dataset
+erp <- read_csv("erp_data.csv")
+```
+
+Distinguish three sites for LPP activity: right, left, and centralized. This is a two dimensional view of our electrodes for our equidistant montage. The site of maximal activation for each condition are right lateralized at electrodes B23, B24, B26, and B27. Another site of activation in all conditions is left lateralized at electrodes A27, A26, A30, and A29. Our initial hypothesis was to measure LPP as a more centro parietal component at electrodes A25, B21, B22, an B28, which was more in line with previous literature on the componnent. This will serve as our centralized LPP.
+
+```{r LPP sites}
+elec_loc <- read_csv("Equidistant Layout.csv")
+elec_loc <- elec_loc %>%
+  rename("channel" = `channel name`) %>%
+  filter(channel != "CMS", channel != "DRL")
+
+elec_loc$radian_phi <- pi/180 * elec_loc$phi
+
+elec_loc <- elec_loc %>%
+  mutate(x = theta * cos(radian_phi),
+         y = theta * sin(radian_phi))
+
+# this is where our electrodes are
+ggplot(elec_loc, aes(x, y, label = channel)) +
+  geom_text() +
+  theme_bw() +
+  coord_equal()
+```
+
+Calculate LPP averages for each site (400 ms - 1000 ms)
+```{r calculation of LPP sites}
+LPP_1000 <- erp_long %>%
+  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 400, 1000)) %>%
+  group_by(pid, block) %>%
+  summarize("400_to_1000_LPP" = mean(mv, na.rm = TRUE))
+```
+
+
+
