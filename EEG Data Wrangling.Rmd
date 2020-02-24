@@ -97,6 +97,7 @@ erp <- full_join(mul_tbl, evt_tbl, by = c("pid", "block"))
 erp <- erp %>% select(-c(X73, X72))
 # fix incorrect pid
 erp$pid[erp$pid == 201206832] <- 206201832
+write_csv(erp, "erp_data.csv")
 ```
 
 Now, we are set to do some analyses!
