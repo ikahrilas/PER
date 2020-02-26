@@ -94,7 +94,7 @@ names(mul_tbl) <- gsub("_.*", "", names(mul_tbl))
 ```{r merge mul and evt dataframes}
 erp <- full_join(mul_tbl, evt_tbl, by = c("pid", "block"))
 # can also drop x72 and x73 columns, as they don't contain anything!
-erp <- erp %>% select(-c(X73, X72))
+erp <- erp %>% select(-c(X74, X73, X72))
 # fix incorrect pid
 erp$pid[erp$pid == 201206832] <- 206201832
 write_csv(erp, "erp_data.csv")
