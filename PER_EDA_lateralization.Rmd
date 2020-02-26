@@ -7,6 +7,8 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(pander)
 # load in erp dataset
 erp <- read_csv("erp_data.csv")
 ```
@@ -60,7 +62,32 @@ levels(per_int$block) <- c("Neg_Dec",
                            "Pos_Inc",
                            "Pos_Watch")
 per_erp <- full_join(LPP_total, per_int, by = c("pid", "block"))
+# remove outlier
+per_erp <- per_erp %>% 
+  filter(!(pid %in% c(206201843)))
+```
+Inspect average LPP amplitude for each LPP site for all blocks.
+```{r LPP descriptives}
+per_erp %>% 
+  group_by(block) %>% 
+  summarize("Mean LPP Right" = mean(LPP_right, na.rm = TRUE),
+            "SD LPP Right" = sd(LPP_right, na.rm = TRUE),
+            "Mean LPP Left" = mean(LPP_left, na.rm = TRUE),
+            "SD LPP Left" = sd(LPP_left, na.rm = TRUE),
+            "Mean LPP Center" = mean(LPP_center, na.rm = TRUE),
+            "SD LPP Center" = sd(LPP_center, na.rm = TRUE)) %>% 
+  pander()
 ```
 
+```{r}
+# long form data for plotting
+per_erp_long <- per_erp %>% 
+  pivot_longer(LPP_right:LPP_center, names_to = "site", values_to = "LPP") %>% 
+  mutate(site = str_remove(site, "LPP_"))
+
+ggplot(per_erp_long, aes(block, LPP, color = site)) +
+  geom_boxplot()
+
+```
 
 
