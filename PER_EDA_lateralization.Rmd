@@ -90,4 +90,20 @@ ggplot(per_erp_long, aes(block, LPP, color = site)) +
 
 ```
 
+Hypotheses but testing different electrode sites
+```{r}
+per_erp_long$block <- relevel(per_erp_long$block, ref = "Neu_Watch")
+per_erp$block <- relevel(per_erp$block, ref = "Neu_Watch") 
+summary(lmerTest::lmer(LPP ~ site + (1|pid), data = per_erp_long))
+mod_center <- lmerTest::lmer(LPP_center ~ block + (1|pid), data = per_erp)
+mod_left <- lmerTest::lmer(LPP_left ~ block + (1|pid), data = per_erp)
+mod_right <- lmerTest::lmer(LPP_right ~ block + (1|pid), data = per_erp)
+summary(mod_center)
+summary(mod_left)
+summary(mod_right)
+AIC(mod_center)
+AIC(mod_left)
+AIC(mod_right)
+anova(mod_left, mod_right)
+```
 
