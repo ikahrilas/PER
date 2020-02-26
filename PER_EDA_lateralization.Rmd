@@ -15,7 +15,7 @@ erp <- read_csv("erp_data.csv")
 
 Distinguish three sites for LPP activity: right, left, and centralized. This is a two dimensional view of our electrodes for our equidistant montage. The site of maximal activation for each condition are right lateralized at electrodes B23, B24, B26, and B27. Another site of activation in all conditions is left lateralized at electrodes A27, A26, A30, and A29. Our initial hypothesis was to measure LPP as a more centro parietal component at electrodes A25, B21, B22, an B28, which was more in line with previous literature on the componnent. This will serve as our centralized LPP.
 
-```{r LPP sites}
+```{r LPP sites, message = FALSE}
 elec_loc <- read_csv("Equidistant Layout.csv")
 elec_loc <- elec_loc %>%
   rename("channel" = `channel name`) %>%
@@ -36,24 +36,30 @@ ggplot(elec_loc, aes(x, y, label = channel)) +
 
 Calculate LPP averages for each site (400 ms - 1000 ms) and merge with questionnaire data.
 ```{r calculation of LPP sites}
+erp_long <- gather(erp, key = "electrode", value = "mv", str_subset(names(erp), "[A-Z]"))
+
 LPP_right <- erp_long %>%
-  filter(!is.na(n_trials), electrode %in% c("B23", "B24", "B26", "B27"), between(ms, 400, 1000)) %>%
+  filter(electrode %in% c("B23", "B24", "B26", "B27"), between(ms, 400, 1000)) %>%
   group_by(pid, block) %>%
   summarize("LPP_right" = mean(mv, na.rm = TRUE))
 LPP_left <- erp_long %>%
-  filter(!is.na(n_trials), electrode %in% c("A27", "A26", "A30", "A29"), between(ms, 400, 1000)) %>%
+  filter(electrode %in% c("A27", "A26", "A30", "A29"), between(ms, 400, 1000)) %>%
   group_by(pid, block) %>%
   summarize("LPP_left" = mean(mv, na.rm = TRUE))
 LPP_center <- erp_long %>%
-  filter(!is.na(n_trials), electrode %in% c("A25", "B21", "B22", "B28"), between(ms, 400, 1000)) %>%
+  filter(electrode %in% c("A25", "B21", "B22", "B28"), between(ms, 400, 1000)) %>%
   group_by(pid, block) %>%
   summarize("LPP_center" = mean(mv, na.rm = TRUE))
+
 LPP_total <- full_join(LPP_right, LPP_left, by = c("pid", "block")) %>%
   full_join(LPP_center, by = c("pid", "block"))
+
 LPP_total$block <- as.factor(LPP_total$block)
+
 per_int <- read_csv("per_measures.csv")
+
 per_int$block <- as.factor(per_int$block) 
-per_int$block <- droplevels(per_int$block)
+
 levels(per_int$block) <- c("Neg_Dec",
                            "Neg_Inc",
                            "Neg_Watch",
@@ -61,7 +67,9 @@ levels(per_int$block) <- c("Neg_Dec",
                            "Pos_Dec",
                            "Pos_Inc",
                            "Pos_Watch")
-per_erp <- full_join(LPP_total, per_int, by = c("pid", "block"))
+
+per_erp <- full_join(LPP_total, per_int, by = c("pid", "block")) %>% filter(!is.na(LPP_center))
+
 # remove outlier
 per_erp <- per_erp %>% 
   filter(!(pid %in% c(206201843)))
@@ -79,14 +87,15 @@ per_erp %>%
   pander()
 ```
 
-```{r}
+```{r box plots for block partitioned by electrode site}
 # long form data for plotting
 per_erp_long <- per_erp %>% 
   pivot_longer(LPP_right:LPP_center, names_to = "site", values_to = "LPP") %>% 
   mutate(site = str_remove(site, "LPP_"))
 
 ggplot(per_erp_long, aes(block, LPP, color = site)) +
-  geom_boxplot()
+  geom_boxplot() + 
+  ggtitle("LPP Averages for each Block Partitioned by Electrode Site")
 
 ```
 
