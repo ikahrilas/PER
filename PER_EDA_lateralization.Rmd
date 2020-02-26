@@ -68,7 +68,7 @@ levels(per_int$block) <- c("Neg_Dec",
                            "Pos_Inc",
                            "Pos_Watch")
 
-per_erp <- full_join(LPP_total, per_int, by = c("pid", "block")) %>% filter(!is.na(LPP_center))
+per_erp <- full_join(LPP_total, per_int, by = c("pid", "block"))
 
 # remove outlier
 per_erp <- per_erp %>% 
