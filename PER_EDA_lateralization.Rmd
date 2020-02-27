@@ -1,12 +1,12 @@
 ---
 title: "PER EDA Lateralization"
 author: "Ian Kahrilas"
-date: "2/21/2020"
+date: "2/27/2020"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(ggpubr)
 library(pander)
@@ -35,7 +35,9 @@ ggplot(elec_loc, aes(x, y, label = channel)) +
   theme_bw() +
   coord_equal()
 ```
+
 Calculate LPP averages for each site (400 ms - 1000 ms) and merge with questionnaire data.
+
 ```{r calculation of LPP sites, include=FALSE}
 erp_long <- gather(erp, key = "electrode", value = "mv", str_subset(names(erp), "[A-Z]"))
 
@@ -75,7 +77,9 @@ per_erp <- full_join(LPP_total, per_int, by = c("pid", "block"))
 per_erp <- per_erp %>% 
   filter(!(pid %in% c(206201843)))
 ```
+
 The below table shows the means and SDs of LPP for each block across each electrode site. LPP averages are consistently larger in the right lateralized site. Variability is comparable.
+
 ```{r LPP descriptives}
 per_erp %>% 
   group_by(block) %>% 
@@ -87,7 +91,9 @@ per_erp %>%
             "SD LPP Center" = sd(LPP_center, na.rm = TRUE)) %>% 
   pander()
 ```
+
 The below plot illustrates boxplots for LPP amplitudes in each block partitioned by electrode site. Again, this illustrates that the right lateralized site has the strongest activation, followed by left, then center.
+
 ```{r box plots for block partitioned by electrode site, warning = FALSE, message=FALSE, warning=FALSE}
 # long form data for plotting
 per_erp_long <- per_erp %>% 
@@ -99,24 +105,32 @@ ggplot(per_erp_long, aes(block, LPP, color = site)) +
   ggtitle("LPP Averages for each Block Partitioned by Electrode Site")
 
 ```
+
 To determine if any particular site does a better job explaining variance in LPP in our main study hypotheses, three different models will be fit that correspond to each main study hypotheses, each using LPP that is localized to various sites (left, right, center). The AIC for each of these models will be compared via ANOVA to determine if there are significant differences.
+
 ```{r prep block variable, include=FALSE}
 per_erp_long$block <- relevel(per_erp_long$block, ref = "Neu_Watch")
 per_erp_long$block <- relevel(per_erp$block, ref = "Neu_Watch") 
 ```
-For hypothesis one, that positively- and negatively-valenced blocks elicit larger LPP than the neutral condition
+
+### For hypothesis one, that positively- and negatively-valenced blocks elicit larger LPP than the neutral condition
+
 ```{r fit various models}
 summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site == "left")))
 summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site == "center")))
 summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site == "right")))
 ```
-Models for hypothesis two
+
+### For hypthesis two, that positive affectivity moderates the relationship between viewing positive images and LPP
+
 ```{r models for hypothesis two}
 summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(per_erp_long, site == "left")))
 summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(per_erp_long, site == "center")))
 summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(per_erp_long, site == "right")))
 ```
-Models for hypothesis three
+
+# Models for hypothesis three, that savoring the moment moderates the relationship between increasing emotional intensity in response to positive images and LPP
+
 ```{r relevel block variable, include=FALSE}
 per_erp_long$block <- relevel(per_erp_long$block, ref = "Pos_Watch")
 ```
@@ -126,7 +140,9 @@ summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(pe
 summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(per_erp_long, site == "center")))
 summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(per_erp_long, site == "right")))
 ```
-Inspect distributions of other questionnaire data
+
+## Inspect distributions of other questionnaire data
+
 ```{r depression}
 per_erp %>% 
   group_by(pid) %>% 
@@ -161,5 +177,49 @@ per_erp %>%
   ggplot(., (aes(tmms_clarity))) +
     geom_histogram(bins = 15, fill = "white", color = "black") +
     ggtitle("TMMS Clarity histogram")
+```
+
+```{r tmms attention}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(tmms_attention = mean(tmms_attention, na.rm = TRUE)) %>% 
+  ggplot(., (aes(tmms_attention))) +
+    geom_histogram(bins = 15, fill = "white", color = "black") +
+    ggtitle("TMMS Attention histogram")
+```
+```{r tmms repair}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(tmms_repair = mean(tmms_repair, na.rm = TRUE)) %>% 
+  ggplot(., (aes(tmms_repair))) +
+    geom_histogram(bins = 15, fill = "white", color = "black") +
+    ggtitle("TMMS Repair histogram")
+```
+
+```{r masq aa, warning = FALSE}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(masq_aa = mean(masq_aa, na.rm = TRUE)) %>% 
+  ggplot(., (aes(masq_aa))) +
+    geom_histogram(bins = 15, fill = "white", color = "black") +
+    ggtitle("Anxious Arousal histogram")
+```
+
+```{r masq pa, warning=FALSE}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(masq_pa = mean(masq_pa, na.rm = TRUE)) %>% 
+  ggplot(., (aes(masq_pa))) +
+    geom_histogram(bins = 20, fill = "white", color = "black") +
+    ggtitle("MASQ PA histogram")
+```
+
+```{r masq na}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(masq_na = mean(masq_na, na.rm = TRUE)) %>% 
+  ggplot(., (aes(masq_na))) +
+    geom_histogram(bins = 15, fill = "white", color = "black") +
+    ggtitle("MASQ NA histogram")
 ```
 
