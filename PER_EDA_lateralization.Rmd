@@ -363,10 +363,145 @@ per_erp <- full_join(pos_dec_contrast, tmp, by = "pid") %>%
   select(pid, right_pos_watch_pos_dec_contrast) %>% 
   full_join(., per_erp, by = "pid")
 
+neg_watch_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "left") %>%
+  rename("LPP_left_neg_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neu_Watch", site == "left") %>% 
+  rename("LPP_left_neu_watch" = LPP) %>% 
+  select(pid, LPP_left_neu_watch)
+
+per_erp <- full_join(neg_watch_contrast, tmp, by = "pid") %>% 
+  mutate(left_neg_watch_neu_watch_contrast = LPP_left_neg_watch - LPP_left_neu_watch) %>% 
+  select(pid, left_neg_watch_neu_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
 
 
+neg_watch_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "center") %>%
+  rename("LPP_center_neg_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neu_Watch", site == "center") %>% 
+  rename("LPP_center_neu_watch" = LPP) %>% 
+  select(pid, LPP_center_neu_watch)
+
+per_erp <- full_join(neg_watch_contrast, tmp, by = "pid") %>% 
+  mutate(center_neg_watch_neu_watch_contrast = LPP_center_neg_watch - LPP_center_neu_watch) %>% 
+  select(pid, center_neg_watch_neu_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
 
 
+neg_watch_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "right") %>%
+  rename("LPP_right_neg_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neu_Watch", site == "right") %>% 
+  rename("LPP_right_neu_watch" = LPP) %>% 
+  select(pid, LPP_right_neu_watch)
+
+per_erp <- full_join(neg_watch_contrast, tmp, by = "pid") %>% 
+  mutate(right_neg_watch_neu_watch_contrast = LPP_right_neg_watch - LPP_right_neu_watch) %>% 
+  select(pid, right_neg_watch_neu_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+neg_inc_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Inc", site == "left") %>%
+  rename("LPP_left_neg_inc" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "left") %>% 
+  rename("LPP_left_neg_watch" = LPP) %>% 
+  select(pid, LPP_left_neg_watch)
+
+per_erp <- full_join(neg_inc_contrast, tmp, by = "pid") %>% 
+  mutate(left_neg_inc_neg_watch_contrast = LPP_left_neg_inc - LPP_left_neg_watch) %>% 
+  select(pid, left_neg_inc_neg_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+
+neg_inc_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Inc", site == "center") %>%
+  rename("LPP_center_neg_inc" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "center") %>% 
+  rename("LPP_center_neg_watch" = LPP) %>% 
+  select(pid, LPP_center_neg_watch)
+
+per_erp <- full_join(neg_inc_contrast, tmp, by = "pid") %>% 
+  mutate(center_neg_inc_neg_watch_contrast = LPP_center_neg_inc - LPP_center_neg_watch) %>% 
+  select(pid, center_neg_inc_neg_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+
+neg_inc_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Inc", site == "right") %>%
+  rename("LPP_right_neg_inc" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "right") %>% 
+  rename("LPP_right_neg_watch" = LPP) %>% 
+  select(pid, LPP_right_neg_watch)
+
+per_erp <- full_join(neg_inc_contrast, tmp, by = "pid") %>% 
+  mutate(right_neg_inc_neg_watch_contrast = LPP_right_neg_inc - LPP_right_neg_watch) %>% 
+  select(pid, right_neg_inc_neg_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+neg_dec_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Dec", site == "left") %>%
+  rename("LPP_left_neg_dec" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "left") %>% 
+  rename("LPP_left_neg_watch" = LPP) %>% 
+  select(pid, LPP_left_neg_watch)
+
+per_erp <- full_join(neg_dec_contrast, tmp, by = "pid") %>% 
+  mutate(left_neg_watch_neg_dec_contrast = LPP_left_neg_watch - LPP_left_neg_dec) %>% 
+  select(pid, left_neg_watch_neg_dec_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+neg_dec_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Dec", site == "center") %>%
+  rename("LPP_center_neg_dec" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "center") %>% 
+  rename("LPP_center_neg_watch" = LPP) %>% 
+  select(pid, LPP_center_neg_watch)
+
+per_erp <- full_join(neg_dec_contrast, tmp, by = "pid") %>% 
+  mutate(center_neg_watch_neg_dec_contrast = LPP_center_neg_watch - LPP_center_neg_dec) %>% 
+  select(pid, center_neg_watch_neg_dec_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+
+neg_dec_contrast <- per_erp_long %>% 
+  filter(block == "Neg_Dec", site == "right") %>%
+  rename("LPP_right_neg_dec" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Neg_Watch", site == "right") %>% 
+  rename("LPP_right_neg_watch" = LPP) %>% 
+  select(pid, LPP_right_neg_watch)
+
+per_erp <- full_join(neg_dec_contrast, tmp, by = "pid") %>% 
+  mutate(right_neg_watch_neg_dec_contrast = LPP_right_neg_watch - LPP_right_neg_dec) %>% 
+  select(pid, right_neg_watch_neg_dec_contrast) %>% 
+  full_join(., per_erp, by = "pid")
 
 pred <- per_erp %>% 
   select(political_orientation,
