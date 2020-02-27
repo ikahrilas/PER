@@ -540,8 +540,7 @@ per_erp_pid <- per_erp %>%
             )
 
 pred <- per_erp_pid %>% 
-  select(political_orientation,
-         masq_pa:depression)
+  select(political_orientation:depression)
 pred <- names(pred[-1])
 
 outcome <- per_erp_pid %>% 
@@ -563,13 +562,13 @@ scatter_fun <- function(x, y) {
 per_plots <- map(outcomes,
     ~ map(preds, scatter_fun, y = .x))
 
-per_plots$center_neg_watch_neg_dec_contrast
+per_plots
 ```
 
 ```{r analyses}
 library(lmerTest)
-per_erp$block <- relevel(per_erp$block, ref = "Neg_Watch")
+per_erp$block <- relevel(per_erp$block, ref = "Neu_Watch")
 
-summary(lmer(LPP_center ~ block * poly(erq_suppression, 2) + (1|pid), data = per_erp))
+summary(lmer(difficulty ~ tmms_repair + (1|pid), data = per_erp))
 ```
 
