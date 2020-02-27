@@ -113,7 +113,7 @@ per_erp_long$block <- relevel(per_erp_long$block, ref = "Neu_Watch")
 per_erp_long$block <- relevel(per_erp$block, ref = "Neu_Watch") 
 ```
 
-### For hypothesis one, that positively- and negatively-valenced blocks elicit larger LPP than the neutral condition
+## For hypothesis one, that positively- and negatively-valenced blocks elicit larger LPP than the neutral condition
 
 ```{r fit various models}
 summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site == "left")))
@@ -121,7 +121,7 @@ summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site =
 summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site == "right")))
 ```
 
-### For hypthesis two, that positive affectivity moderates the relationship between viewing positive images and LPP
+## For hypthesis two, that positive affectivity moderates the relationship between viewing positive images and LPP
 
 ```{r models for hypothesis two}
 summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(per_erp_long, site == "left")))
@@ -129,7 +129,7 @@ summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(pe
 summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(per_erp_long, site == "right")))
 ```
 
-# Models for hypothesis three, that savoring the moment moderates the relationship between increasing emotional intensity in response to positive images and LPP
+## Models for hypothesis three, that savoring the moment moderates the relationship between increasing emotional intensity in response to positive images and LPP
 
 ```{r relevel block variable, include=FALSE}
 per_erp_long$block <- relevel(per_erp_long$block, ref = "Pos_Watch")
@@ -221,5 +221,176 @@ per_erp %>%
   ggplot(., (aes(masq_na))) +
     geom_histogram(bins = 15, fill = "white", color = "black") +
     ggtitle("MASQ NA histogram")
+```
+depression - nothing
+```{r, warning=FALSE}
+per_erp$block <- relevel(per_erp$block, ref = "Neu_Watch")
+
+pos_watch_contrast <- per_erp_long %>% 
+  filter(block == "Neu_Watch", site == "left") %>%
+  rename("LPP_left_neu_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "left") %>% 
+  rename("LPP_left_pos_watch" = LPP) %>% 
+  select(pid, LPP_left_pos_watch)
+
+per_erp <- full_join(pos_watch_contrast, tmp, by = "pid") %>% 
+  mutate(left_pos_watch_neu_watch_contrast = LPP_left_pos_watch - LPP_left_neu_watch) %>% 
+  select(pid, left_pos_watch_neu_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+pos_watch_contrast <- per_erp_long %>% 
+  filter(block == "Neu_Watch", site == "center") %>%
+  rename("LPP_center_neu_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "center") %>% 
+  rename("LPP_center_pos_watch" = LPP) %>% 
+  select(pid, LPP_center_pos_watch)
+
+per_erp <- full_join(pos_watch_contrast, tmp, by = "pid") %>% 
+  mutate(center_pos_watch_neu_watch_contrast = LPP_center_pos_watch - LPP_center_neu_watch) %>% 
+  select(pid, center_pos_watch_neu_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+pos_watch_contrast <- per_erp_long %>% 
+  filter(block == "Neu_Watch", site == "right") %>%
+  rename("LPP_right_neu_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "right") %>% 
+  rename("LPP_right_pos_watch" = LPP) %>% 
+  select(pid, LPP_right_pos_watch)
+
+per_erp <- full_join(pos_watch_contrast, tmp, by = "pid") %>% 
+  mutate(right_pos_watch_neu_watch_contrast = LPP_right_pos_watch - LPP_right_neu_watch) %>% 
+  select(pid, right_pos_watch_neu_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+
+pos_inc_contrast <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "left") %>%
+  rename("LPP_left_pos_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Inc", site == "left") %>% 
+  rename("LPP_left_pos_inc" = LPP) %>% 
+  select(pid, LPP_left_pos_inc)
+
+per_erp <- full_join(pos_inc_contrast, tmp, by = "pid") %>% 
+  mutate(left_pos_inc_pos_watch_contrast = LPP_left_pos_inc - LPP_left_pos_watch) %>% 
+  select(pid, left_pos_inc_pos_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+
+pos_inc_contrast <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "center") %>%
+  rename("LPP_center_pos_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Inc", site == "center") %>% 
+  rename("LPP_center_pos_inc" = LPP) %>% 
+  select(pid, LPP_center_pos_inc)
+
+per_erp <- full_join(pos_inc_contrast, tmp, by = "pid") %>% 
+  mutate(center_pos_inc_pos_watch_contrast = LPP_center_pos_inc - LPP_center_pos_watch) %>% 
+  select(pid, center_pos_inc_pos_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+pos_inc_contrast <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "right") %>%
+  rename("LPP_right_pos_watch" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Inc", site == "right") %>% 
+  rename("LPP_right_pos_inc" = LPP) %>% 
+  select(pid, LPP_right_pos_inc)
+
+per_erp <- full_join(pos_inc_contrast, tmp, by = "pid") %>% 
+  mutate(right_pos_inc_pos_watch_contrast = LPP_right_pos_inc - LPP_right_pos_watch) %>% 
+  select(pid, right_pos_inc_pos_watch_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+pos_dec_contrast <- per_erp_long %>% 
+  filter(block == "Pos_Dec", site == "left") %>%
+  rename("LPP_left_pos_dec" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "left") %>% 
+  rename("LPP_left_pos_watch" = LPP) %>% 
+  select(pid, LPP_left_pos_watch)
+
+per_erp <- full_join(pos_dec_contrast, tmp, by = "pid") %>% 
+  mutate(left_pos_watch_pos_dec_contrast = LPP_left_pos_watch - LPP_left_pos_dec) %>% 
+  select(pid, left_pos_watch_pos_dec_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+pos_dec_contrast <- per_erp_long %>% 
+  filter(block == "Pos_Dec", site == "center") %>%
+  rename("LPP_center_pos_dec" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "center") %>% 
+  rename("LPP_center_pos_watch" = LPP) %>% 
+  select(pid, LPP_center_pos_watch)
+
+per_erp <- full_join(pos_dec_contrast, tmp, by = "pid") %>% 
+  mutate(center_pos_watch_pos_dec_contrast = LPP_center_pos_watch - LPP_center_pos_dec) %>% 
+  select(pid, center_pos_watch_pos_dec_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+pos_dec_contrast <- per_erp_long %>% 
+  filter(block == "Pos_Dec", site == "right") %>%
+  rename("LPP_right_pos_dec" = LPP) %>% 
+  select(-block)
+
+tmp <- per_erp_long %>% 
+  filter(block == "Pos_Watch", site == "right") %>% 
+  rename("LPP_right_pos_watch" = LPP) %>% 
+  select(pid, LPP_right_pos_watch)
+
+per_erp <- full_join(pos_dec_contrast, tmp, by = "pid") %>% 
+  mutate(right_pos_watch_pos_dec_contrast = LPP_right_pos_watch - LPP_right_pos_dec) %>% 
+  select(pid, right_pos_watch_pos_dec_contrast) %>% 
+  full_join(., per_erp, by = "pid")
+
+
+
+
+
+
+pred <- per_erp %>% 
+  select(political_orientation,
+         masq_pa:depression)
+pred <- names(pred[-1])
+
+outcome <- per_erp %>% 
+  select(LPP_right:valence)
+outcome <- names(outcome[-1])
+
+preds <- purrr::set_names(pred)
+outcomes <- purrr::set_names(outcome)
+
+scatter_fun <- function(x, y) {
+  ggplot(per_erp, aes(x = .data[[x]], y = .data[[y]])) +
+    geom_jitter() + 
+    geom_smooth(method = "loess") + 
+    labs(x = x,
+         y = y)
+}
+
+map(outcomes,
+    ~ map(preds, scatter_fun, y = .x))
+
+summary(lmerTest::lmer(arousal ~ block * depression + (1|pid), data = per_erp))
 ```
 
