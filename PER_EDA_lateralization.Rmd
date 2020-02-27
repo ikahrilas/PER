@@ -8,7 +8,9 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(ggpubr)
 library(pander)
+library(glue)
 # load in erp dataset
 erp <- read_csv("erp_data.csv")
 ```
@@ -33,7 +35,6 @@ ggplot(elec_loc, aes(x, y, label = channel)) +
   theme_bw() +
   coord_equal()
 ```
-
 Calculate LPP averages for each site (400 ms - 1000 ms) and merge with questionnaire data.
 ```{r calculation of LPP sites, include=FALSE}
 erp_long <- gather(erp, key = "electrode", value = "mv", str_subset(names(erp), "[A-Z]"))
@@ -125,3 +126,40 @@ summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(pe
 summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(per_erp_long, site == "center")))
 summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(per_erp_long, site == "right")))
 ```
+Inspect distributions of other questionnaire data
+```{r depression}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(depression = mean(depression, na.rm = TRUE)) %>% 
+  ggplot(., (aes(depression))) +
+    geom_histogram(bins = 15, fill = "white", color = "black") +
+    ggtitle("Depression histogram")
+```
+
+```{r erq_suppression}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(erq_suppression = mean(erq_suppression, na.rm = TRUE)) %>% 
+  ggplot(., (aes(erq_suppression))) +
+    geom_histogram(bins = 15, fill = "white", color = "black") +
+    ggtitle("ERQ Suppression histogram")
+```
+
+```{r erq_reappraisal}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(erq_reappraisal = mean(erq_reappraisal, na.rm = TRUE)) %>% 
+  ggplot(., (aes(erq_reappraisal))) +
+    geom_histogram(bins = 15, fill = "white", color = "black") +
+    ggtitle("ERQ Reappraisal histogram")
+```
+
+```{r tmms_clarity}
+per_erp %>% 
+  group_by(pid) %>% 
+  summarize(tmms_clarity = mean(tmms_clarity, na.rm = TRUE)) %>% 
+  ggplot(., (aes(tmms_clarity))) +
+    geom_histogram(bins = 15, fill = "white", color = "black") +
+    ggtitle("TMMS Clarity histogram")
+```
+
