@@ -563,9 +563,7 @@ scatter_fun <- function(x, y) {
          y = y)
 }
 
-per_scatter_plots <- map(outcomes,
+map(outcomes,
     ~ map(preds, scatter_fun, y = .x))
-
-per_scatter_plots
 ```
 
