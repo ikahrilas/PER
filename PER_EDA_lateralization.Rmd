@@ -287,7 +287,6 @@ per_erp <- full_join(pos_inc_contrast, tmp, by = "pid") %>%
   select(pid, left_pos_inc_pos_watch_contrast) %>% 
   full_join(., per_erp, by = "pid")
 
-
 pos_inc_contrast <- per_erp_long %>% 
   filter(block == "Pos_Watch", site == "center") %>%
   rename("LPP_center_pos_watch" = LPP) %>% 
@@ -503,29 +502,70 @@ per_erp <- full_join(neg_dec_contrast, tmp, by = "pid") %>%
   select(pid, right_neg_watch_neg_dec_contrast) %>% 
   full_join(., per_erp, by = "pid")
 
-pred <- per_erp %>% 
+per_erp_pid <- per_erp %>% 
+  group_by(pid) %>% 
+  summarize(right_neg_watch_neg_dec_contrast = mean(right_neg_watch_neg_dec_contrast, na.rm = TRUE),
+            center_neg_watch_neg_dec_contrast = mean(center_neg_watch_neg_dec_contrast, na.rm = TRUE),
+            left_neg_watch_neg_dec_contrast = mean(left_neg_watch_neg_dec_contrast, na.rm = TRUE),
+            right_neg_inc_neg_watch_contrast = mean(right_neg_inc_neg_watch_contrast, na.rm = TRUE),
+            center_neg_inc_neg_watch_contrast = mean(center_neg_inc_neg_watch_contrast, na.rm = TRUE),
+            left_neg_inc_neg_watch_contrast = mean(left_neg_inc_neg_watch_contrast, na.rm = TRUE),
+            right_neg_watch_neu_watch_contrast = mean(right_neg_watch_neu_watch_contrast, na.rm = TRUE),
+            center_neg_watch_neu_watch_contrast = mean(center_neg_watch_neu_watch_contrast, nna.rm = TRUE),
+            left_neg_watch_neu_watch_contrast = mean(left_neg_watch_neu_watch_contrast, na.rm = TRUE),
+            right_pos_watch_pos_dec_contrast = mean(right_pos_watch_pos_dec_contrast, na.rm = TRUE),
+            center_pos_watch_pos_dec_contrast = mean(center_pos_watch_pos_dec_contrast, na.rm = TRUE),
+            left_pos_watch_pos_dec_contrast = mean(left_pos_watch_pos_dec_contrast, na.rm = TRUE),
+            right_pos_inc_pos_watch_contrast = mean(right_pos_inc_pos_watch_contrast, na.rm = TRUE),
+            center_pos_inc_pos_watch_contrast = mean(center_pos_inc_pos_watch_contrast, na.rm = TRUE),
+            left_pos_inc_pos_watch_contrast = mean(left_pos_inc_pos_watch_contrast, na.rm = TRUE),
+            right_pos_watch_neu_watch_contrast = mean(right_pos_watch_neu_watch_contrast, na.rm = TRUE),
+            center_pos_watch_neu_watch_contrast = mean(center_pos_watch_neu_watch_contrast, na.rm = TRUE),
+            left_pos_watch_neu_watch_contrast = mean(left_pos_watch_neu_watch_contrast, na.rm = TRUE),
+            arousal = mean(arousal, na.rm = TRUE),
+            difficulty = mean(difficulty, na.rm = TRUE),
+            valence = mean(valence, na.rm = TRUE),
+            political_orientation = mean(political_orientation, na.rm = TRUE),
+            anticipating = mean(anticipating, na.rm = TRUE),
+            savoring_moment = mean(savoring_moment, na.rm = TRUE),
+            reminiscing = mean(reminiscing, na.rm = TRUE),
+            sbi_tot = mean(sbi_tot, na.rm = TRUE),
+            pos_affectivity = mean(pos_affectivity, na.rm = TRUE),
+            neg_affectivity = mean(neg_affectivity, na.rm = TRUE),
+            masq_pa = mean(masq_pa, na.rm = TRUE),
+            masq_na = mean(masq_na, na.rm = TRUE),
+            masq_aa = mean(masq_aa, na.rm = TRUE),
+            tmms_repair = mean(tmms_repair, na.rm = TRUE),
+            tmms_attention = mean(tmms_attention, na.rm = TRUE),
+            tmms_clarity = mean(tmms_clarity, na.rm = TRUE),
+            erq_reappraisal = mean(erq_reappraisal, na.rm = TRUE),
+            erq_suppression = mean(erq_suppression, na.rm = TRUE),
+            depression = mean(depression, na.rm = TRUE)
+            )
+
+pred <- per_erp_pid %>% 
   select(political_orientation,
          masq_pa:depression)
 pred <- names(pred[-1])
 
-outcome <- per_erp %>% 
-  select(LPP_right:valence)
+outcome <- per_erp_pid %>% 
+  select(right_neg_watch_neg_dec_contrast:valence)
 outcome <- names(outcome[-1])
 
 preds <- purrr::set_names(pred)
 outcomes <- purrr::set_names(outcome)
 
 scatter_fun <- function(x, y) {
-  ggplot(per_erp, aes(x = .data[[x]], y = .data[[y]])) +
+  ggplot(per_erp_pid, aes(x = .data[[x]], y = .data[[y]])) +
     geom_jitter() + 
     geom_smooth(method = "loess") + 
     labs(x = x,
          y = y)
 }
 
-map(outcomes,
+per_scatter_plots <- map(outcomes,
     ~ map(preds, scatter_fun, y = .x))
 
-summary(lmerTest::lmer(arousal ~ block * depression + (1|pid), data = per_erp))
+per_scatter_plots
 ```
 
