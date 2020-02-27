@@ -560,14 +560,16 @@ scatter_fun <- function(x, y) {
          y = y)
 }
 
-map(outcomes,
+per_plots <- map(outcomes,
     ~ map(preds, scatter_fun, y = .x))
+
+per_plots$center_neg_watch_neg_dec_contrast
 ```
 
 ```{r analyses}
 library(lmerTest)
 per_erp$block <- relevel(per_erp$block, ref = "Neg_Watch")
 
-summary(lmer(LPP_center ~ block * tmms_clarity + (1|pid), data = per_erp))
+summary(lmer(LPP_center ~ block * poly(erq_suppression, 2) + (1|pid), data = per_erp))
 ```
 
