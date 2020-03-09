@@ -98,11 +98,16 @@ The below plot illustrates boxplots for LPP amplitudes in each block partitioned
 # long form data for plotting
 per_erp_long <- per_erp %>% 
   pivot_longer(LPP_right:LPP_center, names_to = "site", values_to = "LPP") %>% 
-  mutate(site = str_remove(site, "LPP_"))
+  mutate(site = str_remove(site, "LPP_")) %>% 
+  mutate(site = as.factor(site))
 
+# re-order factor levels for site for more sensible plotting
+per_erp_long$site <- factor(per_erp_long$site, levels(per_erp_long$site)[c(2,1,3)])
+
+# box plots
 ggplot(per_erp_long, aes(block, LPP, color = site)) +
   geom_boxplot() + 
-  ggtitle("LPP Averages for each Block Partitioned by Electrode Site")
+  ggtitle("LPP Averages for each Block Partitioned by Electrode Cluster")
 
 ```
 
