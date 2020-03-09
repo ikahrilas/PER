@@ -125,7 +125,9 @@ summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site =
 summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site == "center")))
 summary(lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_long, site == "right")))
 
-summary(lmerTest::lmer(LPP ~ block * site + (1|pid), data = per_erp_long))
+# all sites with additional nesting and crossed effect
+summary(lmerTest::lmer(LPP ~ block * site + (1|site:pid) +
+                         (site|pid), data = per_erp_long))
 ```
 
 ## For hypthesis two, that positive affectivity moderates the relationship between viewing positive images and LPP
@@ -134,6 +136,10 @@ summary(lmerTest::lmer(LPP ~ block * site + (1|pid), data = per_erp_long))
 summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(per_erp_long, site == "left")))
 summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(per_erp_long, site == "center")))
 summary(lmerTest::lmer(LPP ~ block * pos_affectivity + (1|pid), data = filter(per_erp_long, site == "right")))
+
+# all sites with additional nesting and crossed effect
+summary(lmerTest::lmer(LPP ~ block * pos_affectivity * site + (1|site:pid) +
+                         (site|pid), data = per_erp_long))
 ```
 
 ## Models for hypothesis three, that savoring the moment moderates the relationship between increasing emotional intensity in response to positive images and LPP
@@ -146,7 +152,19 @@ per_erp_long$block <- relevel(per_erp_long$block, ref = "Pos_Watch")
 summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(per_erp_long, site == "left")))
 summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(per_erp_long, site == "center")))
 summary(lmerTest::lmer(LPP ~ block * savoring_moment + (1|pid), data = filter(per_erp_long, site == "right")))
+
+# all sites with additional nesting and crossed effect
+summary(lmerTest::lmer(LPP ~ block * savoring_moment * site + (1|site:pid) +
+                         (site|pid), data = per_erp_long))
 ```
+
+```{r Orthogonal contrasts of electrode clusters}
+summary(aov(LPP ~ site + Error(pid/site), data = per_erp_long), data = per_erp_long)
+site_mod <- lmerTest::lmer(LPP ~ site + (1|site:pid) + (site|pid), data = per_erp_long)
+anova(site_mod)
+psycho::get_contrasts(site_mod, "site") %>% pander(split.table = Inf)
+```
+
 
 ## Inspect distributions of other questionnaire data
 
@@ -194,6 +212,7 @@ per_erp %>%
     geom_histogram(bins = 15, fill = "white", color = "black") +
     ggtitle("TMMS Attention histogram")
 ```
+
 ```{r tmms repair}
 per_erp %>% 
   group_by(pid) %>% 
