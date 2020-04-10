@@ -179,6 +179,14 @@ Collate questionnaire and e-prime data
 eprime_int$pid <- as.character(eprime_int$pid) #convert pid column to character so tbls can be merged
 per_dataset$pid <- as.character(per_dataset$pid)
 per_full <- full_join(eprime_int, per_dataset, by = "pid") #join data
+per_full$block <- droplevels(per_full$block)
+per_full$block <- recode(per_full$block, NEGDEC = "Neg_Dec",
+                       NEGINC = "Neg_Inc",
+                       NEGWAT = "Neg_Watch",
+                       NEUWAT = "Neu_Watch",
+                       POSDEC = "Pos_Dec",
+                       POSINC = "Pos_Inc",
+                       POSWAT = "Pos_Watch")
 # write to file
 write_csv(per_full, here("data", "created_data", "per_measures.csv"))
 ```
