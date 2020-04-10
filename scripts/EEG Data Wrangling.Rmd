@@ -1,0 +1,109 @@
+---
+title: "EEG Data"
+author: "Ian J. Kahrilas"
+date: "9/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load in packages
+
+```{r load in tidyverse}
+library(tidyverse)
+library(here)
+```
+
+Let us first create a vector with our .mul and .evt names
+
+```{r file names}
+# vector of all files in working directory partitioned by avg montage and evt files
+files_mast <- list.files(here("data", "mastoid_ref"))
+files_avg <- list.files(here("data", "avg_ref"))
+files_evt <- list.files(here("data", "evt"))
+```
+Read in .mul and .evt files
+```{r read in .evt files, warning = FALSE, message = FALSE}
+#preallocate space
+mastoid <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
+avg <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
+evt <- tibble(
+  Tmu = rep(NA, times = 51*7),
+  block = rep(NA, times = 51*7),
+  n_trials = rep(NA, times = 51*7),
+  pid = rep(NA, times = 51*7),
+  prop_trials = rep(NA, times = 51*7)
+)
+
+# make list of block names
+block_names <- c("Pos_Inc",
+                 "Pos_Dec",
+                 "Pos_Watch",
+                 "Neg_Inc",
+                 "Neg_Dec",
+                 "Neg_Watch",
+                 "Neu_Watch")
+
+##read in evt files, make columns for block, number of trials, and pid. This cleans names up, too.
+evt <- map_df(files_evt, ~{
+  read_table(here("data", "evt", .x)) %>% 
+  separate(`Code	TriNo	Comnt`, into = c("block", "n_trials"), sep = " ") %>% 
+  mutate(block = str_extract(block, block_names),
+         n_trials = as.numeric(str_extract(n_trials, "[0-9]{2}")),
+         pid = as.numeric(str_extract(.x, "[0-9]+")),
+         prop_trials = n_trials / 40)
+})
+```
+ 
+Read in eeg files
+
+```{r read in .mul files, message = FALSE, warning = FALSE}
+# this reads all mastoid-referenced files into a list and generates pid, block, and ms variables
+mastoid <- map_df(here("data", "mastoid_ref", files_mast), ~ {
+  read_table2(.x, skip = 1) %>%
+  mutate(
+    pid = as.numeric(str_extract(.x, "[0-9]{7,}")),
+    block = rep(block_names, each = nrow(.) / 7),
+    ms = rep(seq(from = -200, to = 3000, 
+                   by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
+               times = 7),
+    )
+  }
+  )
+# drop extraneous columns
+mastoid <- mastoid %>% select(-c(E67:X74, X71:X72))
+# this reads all average-referenced files into a list and generates, pid, block, and ms variables
+avg <- map_df(here("data", "avg_ref", files_avg), ~ {
+  read_table2(.x, skip = 1) %>%
+  mutate(
+    pid = as.numeric(str_extract(.x, "[0-9]{7,}")),
+    block = rep(block_names, each = nrow(.) / 7),
+    ms = rep(seq(from = -200, to = 3000, 
+                   by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
+               times = 7)
+    )}
+  )
+
+## NEED TO REDO 206201817, BEGIN SWEEP = 0 AND SHOULD BE -99
+```
+
+```{r clean up variable/condition names}
+# clean up electrode names
+names(avg) <- gsub("_.*", "_avr", names(avg))
+names(mastoid) <- gsub("_.*", "_avg_mast", names(mastoid))
+```
+
+```{r merge mul and evt dataframes}
+# preallocate space
+erp <- as_tibble(matrix(data = NA_real_, nrow = nrow(mastoid), ncol = ncol(mastoid) + ncol(avg) + ncol(evt)))
+# merge
+erp <- inner_join(mastoid, avg, by = c("pid", "block", "ms")) %>% inner_join(evt, by = "pid", "block")
+# fix incorrect pid
+erp$pid[erp$pid == 201206832] <- 206201832
+# set pid as character class
+erp$pid <- as.character(erp$pid)
+# write file
+write_csv(erp, here("data", "created_data", "erp_data.csv"))
+```
