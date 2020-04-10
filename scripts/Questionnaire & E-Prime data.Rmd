@@ -16,12 +16,13 @@ Load in tidyverse package, which will contain functions used for data wrangling
 ```{r load tidyverse}
 library(tidyverse)
 library(readxl)
+library(here)
 ```
 
 We will first load in the questionnaire data
 
 ```{r load in questionnaire data, message = FALSE, warning = FALSE}
-per_dataset <- read_xlsx("PER Questionnaires.xlsx")
+per_dataset <- read_xlsx(here("data", "questionnaire", "PER Questionnaires.xlsx"))
 # without running this code, R is unable to recognize some column names. seems to be a common issue when working with xls files. This code makes it easier for R to work with the variables by setting it to UTF-8. 
 names(per_dataset) <- enc2native(names(per_dataset))
 ```
@@ -31,7 +32,7 @@ Make correction to participant 201820651 - forgot to administer t2 PANAS to this
 ```{r 201820651 PANAS correction}
 post_panas_51 <- per_dataset[6, 2:28]
 per_dataset[7, 319:345] <-  post_panas_51
-per_dataset[7, 1] <- 206201851
+per_dataset[7, 1] <- "206201851"
 ```
 
 Let's delete unnecessary rows in the data
@@ -43,8 +44,8 @@ per_dataset <- per_dataset[-c(6, 53, 57), ]
 Fix the second 206201819 pid to 206201820 and second 206201841 to 206201842 - these were errors noted in the participant tracking log
 
 ```{r fix incorrect pids}
-per_dataset[37, 1] <- 206201820
-per_dataset[16, 1] <- 206201842
+per_dataset[37, 1] <- "206201820"
+per_dataset[16, 1] <- "206201842"
 ```
 
 Reverse score SBI itmes. Items are a 7-item likert scale, so subtract each score from 8.
@@ -146,7 +147,7 @@ per_dataset <- per_dataset %>%
 Load in e-prime data
 
 ```{r load in e-prime data}
-eprime <- read.table("merged_per_data.txt", sep = "\t", header = TRUE)
+eprime <- read.table(here("data", "e-prime", "merged_per_data.txt"), sep = "\t", header = TRUE)
 ```
 
 Select variables of interest (subject number, block type, as well as arousal, difficulty, and valence ratings)
@@ -175,14 +176,9 @@ eprime_int[273, 4] <- 1
 Collate questionnaire and e-prime data
 
 ```{r merge e-prime and questionnaire data}
-per_dataset$pid <- as.integer(per_dataset$pid) #convert pid column to integer so tbls can be merged
+eprime_int$pid <- as.character(eprime_int$pid) #convert pid column to character so tbls can be merged
+per_dataset$pid <- as.character(per_dataset$pid)
 per_full <- full_join(eprime_int, per_dataset, by = "pid") #join data
-```
-
-Create smaller dataset with only variables of interest
-
-```{r create smaller dataeset}
-per_int <- per_full %>%
-  select(pid:valence, age:ethnicity, Race:political_orientation, anticipating:masq_aa, tmms_repair:depression)
-write_csv(per_int, "per_measures.csv")
+# write to file
+write_csv(per_full, here("data", "created_data", "per_measures.csv"))
 ```
