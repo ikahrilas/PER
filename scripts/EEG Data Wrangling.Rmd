@@ -92,18 +92,23 @@ avg <- map_df(here("data", "avg_ref", files_avg), ~ {
 ```{r clean up variable/condition names}
 # clean up electrode names
 names(avg) <- gsub("_.*", "_avr", names(avg))
-names(mastoid) <- gsub("_.*", "_avg_mast", names(mastoid))
+names(mastoid) <- gsub("_.*", "_mast", names(mastoid))
 ```
 
 ```{r merge mul and evt dataframes}
 # preallocate space
-erp <- as_tibble(matrix(data = NA_real_, nrow = nrow(mastoid), ncol = ncol(mastoid) + ncol(avg) + ncol(evt)))
+erp_mast <- as_tibble(matrix(data = NA_real_, nrow = nrow(mastoid), ncol = ncol(mastoid) + ncol(evt)))
+erp_avr <- as_tibble(matrix(data = NA_real_, nrow = nrow(avg), ncol = ncol(avg) + ncol(evt)))
 # merge
-erp <- inner_join(mastoid, avg, by = c("pid", "block", "ms")) %>% inner_join(evt, by = "pid", "block")
+erp_mast <- inner_join(mastoid, evt, by = c("pid", "block"))
+erp_avr <- inner_join(avg, evt, by = c("pid", "block"))
 # fix incorrect pid
-erp$pid[erp$pid == 201206832] <- 206201832
+erp_mast$pid[erp_mast$pid == 201206832] <- 206201832
+erp_avr$pid[erp_avr$pid == 201206832] <- 206201832
 # set pid as character class
-erp$pid <- as.character(erp$pid)
+erp_mast$pid <- as.character(erp_mast$pid)
+erp_avr$pid <- as.character(erp_avr$pid)
 # write file
-write_csv(erp, here("data", "created_data", "erp_data.csv"))
+write_csv(erp_mast, here("data", "created_data", "erp_mast.csv"))
+write_csv(erp_avr, here("data", "created_data", "erp_avr.csv"))
 ```
