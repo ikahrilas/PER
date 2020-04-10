@@ -91,8 +91,8 @@ avg <- map_df(here("data", "avg_ref", files_avg), ~ {
 
 ```{r clean up variable/condition names}
 # clean up electrode names
-names(avg) <- gsub("_.*", "_avr", names(avg))
-names(mastoid) <- gsub("_.*", "_mast", names(mastoid))
+names(avg) <- gsub("_.*", "", names(avg))
+names(mastoid) <- gsub("_.*", "", names(mastoid))
 ```
 
 ```{r merge mul and evt dataframes}
