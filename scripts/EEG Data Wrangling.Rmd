@@ -16,7 +16,7 @@ library(tidyverse)
 library(here)
 ```
 
-Let us first create a vector with our .mul and .evt names
+Create a vectors with .mul and .evt names
 
 ```{r file names}
 # vector of all files in working directory partitioned by avg montage and evt files
@@ -46,7 +46,7 @@ block_names <- c("Pos_Inc",
                  "Neg_Watch",
                  "Neu_Watch")
 
-##read in evt files, make columns for block, number of trials, and pid. This cleans names up, too.
+# read in evt files, make columns for block, number of trials, and pid. This cleans names up, too.
 evt <- map_df(files_evt, ~{
   read_table(here("data", "evt", .x)) %>% 
   separate(`Code	TriNo	Comnt`, into = c("block", "n_trials"), sep = " ") %>% 
@@ -55,11 +55,7 @@ evt <- map_df(files_evt, ~{
          pid = as.numeric(str_extract(.x, "[0-9]+")),
          prop_trials = n_trials / 40)
 })
-```
- 
-Read in eeg files
 
-```{r read in .mul files, message = FALSE, warning = FALSE}
 # this reads all mastoid-referenced files into a list and generates pid, block, and ms variables
 mastoid <- map_df(here("data", "mastoid_ref", files_mast), ~ {
   read_table2(.x, skip = 1) %>%
@@ -85,8 +81,6 @@ avg <- map_df(here("data", "avg_ref", files_avg), ~ {
                times = 7)
     )}
   )
-
-## NEED TO REDO 206201817, BEGIN SWEEP = 0 AND SHOULD BE -99
 ```
 
 ```{r clean up variable/condition names}
@@ -108,7 +102,7 @@ erp_avr$pid[erp_avr$pid == 201206832] <- 206201832
 # set pid as character class
 erp_mast$pid <- as.character(erp_mast$pid)
 erp_avr$pid <- as.character(erp_avr$pid)
-# write file
+# write files
 write_csv(erp_mast, here("data", "created_data", "erp_mast.csv"))
 write_csv(erp_avr, here("data", "created_data", "erp_avr.csv"))
 ```
