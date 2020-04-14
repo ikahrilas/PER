@@ -21,23 +21,36 @@ per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```{r choose electrodes to average for LPP and EPN}
 lpp_elec_right <- c("B23", "B24", "B26", "B27")
 lpp_elec_left <- c("A27", "A26", "A30", "A29")
-epn_elec_right <- c("B25", "B26", "B24", "B23")
-epn_elec_left <- c("A28", "A27", "A29", "A26")
+epn_elec_right <- c("B25", "B26", "B24")
+epn_elec_left <- c("A28", "A27", "A29")
 
-EPN <- c(260, 395)
+LPP_right <- erp_mast_wide %>%
+  select(all_of(lpp_elec_right), pid:prop_trials) %>% 
+  filter(between(ms, 400, 1000)) %>%
+  pivot_longer(., cols = all_of(lpp_elec_right), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(LPP_right = mean(mv, na.rm = TRUE))
 
-LPP_right <- erp_long %>%
-  filter(electrode %in% c("B23", "B24", "B26", "B27"), between(ms, 400, 1000)) %>%
-  group_by(pid, block) %>%
-  summarize("LPP_right" = mean(mv, na.rm = TRUE))
-LPP_left <- erp_long %>%
-  filter(electrode %in% c("A27", "A26", "A30", "A29"), between(ms, 400, 1000)) %>%
-  group_by(pid, block) %>%
-  summarize("LPP_left" = mean(mv, na.rm = TRUE))
-LPP_center <- erp_long %>%
-  filter(electrode %in% c("A25", "B21", "B22", "B28"), between(ms, 400, 1000)) %>%
-  group_by(pid, block) %>%
-  summarize("LPP_center" = mean(mv, na.rm = TRUE))
+LPP_left <- erp_mast_wide %>%
+  select(all_of(lpp_elec_left), pid:prop_trials) %>% 
+  filter(between(ms, 400, 1000)) %>%
+  pivot_longer(., cols = all_of(lpp_elec_left), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(LPP_left = mean(mv, na.rm = TRUE))
+
+EPN_right <- erp_avr_wide %>%
+  select(all_of(epn_elec_right), pid:prop_trials) %>% 
+  filter(between(ms, 240, 375)) %>%
+  pivot_longer(., cols = all_of(epn_elec_right), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(EPN_right = mean(mv, na.rm = TRUE))
+
+EPN_left <- erp_avr_wide %>%
+  select(all_of(epn_elec_left), pid:prop_trials) %>% 
+  filter(between(ms, 240, 375)) %>%
+  pivot_longer(., cols = all_of(epn_elec_left), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(EPN_left = mean(mv, na.rm = TRUE))
 ```
 
 ```{r draft of electrodes with right frontal activity}
