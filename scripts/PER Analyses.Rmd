@@ -18,11 +18,16 @@ erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr.csv"))
 per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```
 
-```{r choose electrodes to average for LPP and EPN}
+```{r averaging and questionnaire variable selection}
 lpp_elec_right <- c("B23", "B24", "B26", "B27")
 lpp_elec_left <- c("A27", "A26", "A30", "A29")
 epn_elec_right <- c("B25", "B26", "B24")
 epn_elec_left <- c("A28", "A27", "A29")
+# select variabes from questionnaire data set for analyses
+measures_int <- per_questionnaires %>% 
+  select(pid:valence, sex, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
+         anticipating:masq_aa, tmms_repair, depression)
+
 
 LPP_right <- erp_mast_wide %>%
   select(all_of(lpp_elec_right), pid:prop_trials) %>% 
@@ -53,65 +58,23 @@ EPN_left <- erp_avr_wide %>%
   summarize(EPN_left = mean(mv, na.rm = TRUE))
 ```
 
-```{r draft of electrodes with right frontal activity}
-# this is sight of the observed right frontal activity that appears to be maximal at around 1000 ms: B2, B7, & B8
-RF_elec <- c(paste0("B", c(2, 7, 8)))
-```
-
-```{r derive window average for various timecourses}
-#find early 0 - 400 ms averages for Pz electroes
-LPP_400 <- erp_long %>%
-  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 0, 400)) %>%
-  group_by(pid, block) %>%
-  summarize("0_to_400_LPP" = mean(mv, na.rm = TRUE))
-
-#find 400-1000 ms averages for Pz electrodes
-LPP_1000 <- erp_long %>%
-  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 400, 1000)) %>%
-  group_by(pid, block) %>%
-  summarize("400_to_1000_LPP" = mean(mv, na.rm = TRUE))
-
-#find 1000-2000 ms averages for Pz electrodes
-LPP_2000 <- erp_long %>%
-  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 1000, 2000)) %>%
-  group_by(pid, block) %>%
-  summarize("1000_to_2000_LPP" = mean(mv, na.rm = TRUE))
-
-#find 2000-3000 ms averages for Pz electrodes
-LPP_3000 <- erp_long %>%
-  filter(!is.na(n_trials), electrode %in% Pz_elec, between(ms, 2000, 3000)) %>%
-  group_by(pid, block) %>%
-  summarize("2000_to_3000_LPP" = mean(mv, na.rm = TRUE))
-```
-
-```{r draft of peak picking code for right frontal component}
-#RF peak picking code
-RF <- erp_long %>%
-  select(pid:ms, electrode, mv) %>%
-  filter(electrode %in% RF_elec, between(ms, 800, 2000)) %>% #filter dataset in the window of 800 to 2000ms, which can accomodate all participants' peaks but ends before presentation of next stimulus
-  group_by(pid, block, electrode) %>% 
-  mutate(rank = row_number(desc(mv))) %>% #rank cases in terms of mv (1 = greatest amplitude) for each electrode within each block within each participant.
-  filter(between(rank, 1, 5)) %>% #select the top 5 cases that have the greatest mv - this should subsume 2 timepoints before and after the peak. This may need to be revised.
-  group_by(pid, block) %>%
-  summarize("RF_peak" = mean(mv)) %>% #collapse accross electrodes and ranks to find average peak.
-  filter(RF_peak != Inf, RF_peak != -Inf)
-```
-
 Join all the tibbles together
 
 ```{r join all tibbles together}
 #join all LPP tibbles plus right frontal
-LPP_total <- left_join(LPP_400, LPP_1000, by = c("pid", "block")) %>%
-  left_join(LPP_2000, by = c("pid", "block")) %>%
-  left_join(LPP_3000, by = c("pid", "block")) %>%
-  left_join(RF, by = c("pid", "block"))
+per_dat <- left_join(LPP_left, LPP_right, by = c("pid", "block")) %>%
+  left_join(EPN_left, by = c("pid", "block")) %>%
+  left_join(EPN_right, by = c("pid", "block")) %>%
+  left_join(measures_int, by = c("pid", "block"))
 ```
-Change block variable to a factor for analyses
-```{r change block to factor class variable}
-LPP_total$block <- as.factor(LPP_total$block)
-#drop the unused levels in per_int$block of "practice" and "practicewneutral" - they were automatically
-#included because of the practice trials implemented in the paradigm
-per_int$block <- droplevels(per_int$block)
+
+Change variable classes for parsimonious exploration and analysis
+
+```{r change variable classes}
+# pid as character type
+per_dat$pid <- as.character(per_dat$pid)
+# block as factor
+per_dat$block <- as.factor(per_dat$block)
 ```
 
 Rename block variable levels in per_int to match the levels in the ERP data so that LPP data and questionnaire data can be merged
