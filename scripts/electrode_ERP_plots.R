@@ -40,8 +40,8 @@ avr_scatter_fun <- function(elec) {
     summarize(mv = mean(mv, na.rm = TRUE)) %>%   
     ggplot(., aes(ms, mv, color = block)) +
     geom_line(size = 1) +
-    geom_vline(xintercept = c(0, 170), linetype = "dashed") +
-    geom_vline(xintercept = c(200, 300), linetype = "solid", size = 1.05) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = c(260, 395), linetype = "solid", size = 1.05) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     xlim(-200, 600) +
     labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
@@ -74,8 +74,8 @@ avr_scatter_fun_passive <- function(elec) {
     summarize(mv = mean(mv, na.rm = TRUE)) %>%   
     ggplot(., aes(ms, mv, color = block)) +
     geom_line(size = 1) +
-    geom_vline(xintercept = c(0, 170), linetype = "dashed") +
-    geom_vline(xintercept = c(200, 300), linetype = "solid", size = 1.05) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = c(260, 395), linetype = "solid", size = 1.05) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     xlim(-200, 600) +
     labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
