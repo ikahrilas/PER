@@ -10,12 +10,15 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
-# load in dataset
-per_erp <- read_csv("per_erp.csv")
+library(here)
 library(pander)
 library(ggpubr)
 library(car)
 library(moments)
+# load in data
+erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast.csv"))
+erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr.csv"))
+per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```
 
 ## Questionnaire Descriptive Statisitcs

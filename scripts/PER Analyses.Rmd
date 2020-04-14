@@ -12,6 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load in tidyverse and sjPlot}
 library(tidyverse)
 library(sjPlot)
+library(here)
+erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast.csv"))
+erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr.csv"))
+per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```
 
 ```{r choose electrodes to average for LPP}

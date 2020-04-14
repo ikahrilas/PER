@@ -10,9 +10,11 @@ knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(ggpubr)
 library(pander)
-library(glue)
-# load in erp dataset
-erp <- read_csv("erp_data.csv")
+library(here)
+# load in data
+erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast.csv"))
+erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr.csv"))
+per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```
 
 This is a two dimensional view of our electrodes for our equidistant montage. The site of maximal activation for each condition are right lateralized at electrodes B23, B24, B26, and B27. Another site of activation in all conditions is left lateralized at electrodes A27, A26, A30, and A29. Our initial hypothesis was to measure LPP as a more centroparietal component at electrodes A25, B21, B22, an B28, which was more in line with previous literature on the component. This will serve as our centralized LPP.
