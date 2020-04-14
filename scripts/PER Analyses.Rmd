@@ -18,9 +18,26 @@ erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr.csv"))
 per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```
 
-```{r choose electrodes to average for LPP}
-# this defines a character vector with the electrode names of interest
-Pz_elec <- paste0("B", c(23, 24, 26, 27))
+```{r choose electrodes to average for LPP and EPN}
+lpp_elec_right <- c("B23", "B24", "B26", "B27")
+lpp_elec_left <- c("A27", "A26", "A30", "A29")
+epn_elec_right <- c("B25", "B26", "B24", "B23")
+epn_elec_left <- c("A28", "A27", "A29", "A26")
+
+EPN <- c(260, 395)
+
+LPP_right <- erp_long %>%
+  filter(electrode %in% c("B23", "B24", "B26", "B27"), between(ms, 400, 1000)) %>%
+  group_by(pid, block) %>%
+  summarize("LPP_right" = mean(mv, na.rm = TRUE))
+LPP_left <- erp_long %>%
+  filter(electrode %in% c("A27", "A26", "A30", "A29"), between(ms, 400, 1000)) %>%
+  group_by(pid, block) %>%
+  summarize("LPP_left" = mean(mv, na.rm = TRUE))
+LPP_center <- erp_long %>%
+  filter(electrode %in% c("A25", "B21", "B22", "B28"), between(ms, 400, 1000)) %>%
+  group_by(pid, block) %>%
+  summarize("LPP_center" = mean(mv, na.rm = TRUE))
 ```
 
 ```{r draft of electrodes with right frontal activity}
