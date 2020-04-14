@@ -11,6 +11,7 @@ per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 mast_long <- pivot_longer(erp_mast_wide, cols = c(paste0("A", 1:32), paste0("B", 1:32), "EXG1", "EXG2"), names_to = "electrode", values_to = "mv")
 avr_long <- pivot_longer(erp_avr_wide, cols = c(paste0("A", 1:32), paste0("B", 1:32), "EXG1", "EXG2"), names_to = "electrode", values_to = "mv")
 
+# define character vector of electrode names
 electrodes <- c(paste0("A", 1:32), paste0("B", 1:32))
 
 # scatterplot function for mastoid reference
@@ -22,7 +23,7 @@ mast_scatter_fun <- function(elec) {
     summarize(mv = mean(mv, na.rm = TRUE)) %>%   
   ggplot(., aes(ms, mv, color = block)) +
     geom_line(size = 1) +
-    xlim(-200, 2000) +
+    xlim(-200, 1500) +
     geom_vline(xintercept = 0, linetype = "dashed") +
     geom_vline(xintercept = c(400, 1000), linetype = "solid", size = 1.05) +
     geom_hline(yintercept = 0, linetype = "dashed") +
@@ -42,7 +43,7 @@ avr_scatter_fun <- function(elec) {
     geom_vline(xintercept = c(0, 170), linetype = "dashed") +
     geom_vline(xintercept = c(200, 300), linetype = "solid", size = 1.05) +
     geom_hline(yintercept = 0, linetype = "dashed") +
-    xlim(-200, 2000) +
+    xlim(-200, 600) +
     labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
     ggtitle(elec) +
     theme_classic()
@@ -56,7 +57,7 @@ mast_scatter_fun_passive <- function(elec) {
     summarize(mv = mean(mv, na.rm = TRUE)) %>%   
     ggplot(., aes(ms, mv, color = block)) +
     geom_line(size = 1) +
-    xlim(-200, 2000) +
+    xlim(-200, 1500) +
     geom_vline(xintercept = 0, linetype = "dashed") +
     geom_vline(xintercept = c(400, 1000), linetype = "solid", size = 1.05) +
     geom_hline(yintercept = 0, linetype = "dashed") +
@@ -76,13 +77,30 @@ avr_scatter_fun_passive <- function(elec) {
     geom_vline(xintercept = c(0, 170), linetype = "dashed") +
     geom_vline(xintercept = c(200, 300), linetype = "solid", size = 1.05) +
     geom_hline(yintercept = 0, linetype = "dashed") +
-    xlim(-200, 2000) +
+    xlim(-200, 600) +
     labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
     ggtitle(elec) +
     theme_classic()
 }
 
+# map scatterplot functions over each electrode to obtain electrode-by-electrode ERPs
 mast_erp_plots <- map(electrodes, ~ mast_scatter_fun(.x))
 avr_erp_plots <- map(electrodes, ~ avr_scatter_fun(.x))
 mast_erp_plots_passive <- map(electrodes, ~ mast_scatter_fun_passive(.x))
 avr_erp_plots_passive <- map(electrodes, ~ avr_scatter_fun_passive(.x))
+
+# export images to appropriate folders
+map2(mast_erp_plots, electrodes, ~{
+  ggsave(plot = .x, filename = here("images", "mast_erp_plots_by_electrode", .y), device = "png", width = 8, height = 4)
+})
+map2(avr_erp_plots, electrodes, ~{
+  ggsave(plot = .x, filename = here("images", "avr_erp_plots_by_electrode", .y), device = "png", width = 8, height = 4)
+})
+map2(mast_erp_plots_passive, electrodes, ~{
+  ggsave(plot = .x, filename = here("images", "mast_erp_plots_by_electrode_passive", .y), device = "png", width = 8, height = 4)
+})
+map2(avr_erp_plots_passive, electrodes, ~{
+  ggsave(plot = .x, filename = here("images", "avr_erp_plots_by_electrode_passive", .y), device = "png", width = 8, height = 4)
+})
+
+  
