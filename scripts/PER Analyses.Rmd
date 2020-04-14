@@ -58,13 +58,6 @@ EPN_left <- erp_avr_wide %>%
 RF_elec <- c(paste0("B", c(2, 7, 8)))
 ```
 
-```{r transpose data to long form for MLM analyses}
-erp_long <- gather(erp, key = "electrode", value = "mv", str_subset(names(erp), "[A-Z]"))
-erp_long$mv <- as.numeric(erp_long$mv)
-# save dataset to be used in other scripts
-write_csv(erp_long, "erp_long_form.csv")
-```
-
 ```{r derive window average for various timecourses}
 #find early 0 - 400 ms averages for Pz electroes
 LPP_400 <- erp_long %>%
