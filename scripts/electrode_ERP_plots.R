@@ -41,7 +41,7 @@ avr_scatter_fun <- function(elec) {
     ggplot(., aes(ms, mv, color = block)) +
     geom_line(size = 1) +
     geom_vline(xintercept = 0, linetype = "dashed") +
-    geom_vline(xintercept = c(260, 395), linetype = "solid", size = 1.05) +
+    geom_vline(xintercept = c(250, 375), linetype = "solid", size = 1.05) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     xlim(-200, 600) +
     labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
@@ -75,7 +75,7 @@ avr_scatter_fun_passive <- function(elec) {
     ggplot(., aes(ms, mv, color = block)) +
     geom_line(size = 1) +
     geom_vline(xintercept = 0, linetype = "dashed") +
-    geom_vline(xintercept = c(260, 395), linetype = "solid", size = 1.05) +
+    geom_vline(xintercept = c(250, 375), linetype = "solid", size = 1.05) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     xlim(-200, 600) +
     labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
@@ -91,16 +91,16 @@ avr_erp_plots_passive <- map(electrodes, ~ avr_scatter_fun_passive(.x))
 
 # export images to appropriate folders
 map2(mast_erp_plots, electrodes, ~{
-  ggsave(plot = .x, filename = here("images", "mast_erp_plots_by_electrode", .y), device = "png", width = 8, height = 4)
+  ggsave(plot = .x, filename = here("images", "mast_erp_plots_by_electrode", paste0(.y, ".png")), device = "png", width = 8, height = 4)
 })
 map2(avr_erp_plots, electrodes, ~{
-  ggsave(plot = .x, filename = here("images", "avr_erp_plots_by_electrode", .y), device = "png", width = 8, height = 4)
+  ggsave(plot = .x, filename = here("images", "avr_erp_plots_by_electrode", paste0(.y, ".png")), device = "png", width = 8, height = 4)
 })
 map2(mast_erp_plots_passive, electrodes, ~{
-  ggsave(plot = .x, filename = here("images", "mast_erp_plots_by_electrode_passive", .y), device = "png", width = 8, height = 4)
+  ggsave(plot = .x, filename = here("images", "mast_erp_plots_by_electrode_passive", paste0(.y, ".png")), device = "png", width = 8, height = 4)
 })
 map2(avr_erp_plots_passive, electrodes, ~{
-  ggsave(plot = .x, filename = here("images", "avr_erp_plots_by_electrode_passive", .y), device = "png", width = 8, height = 4)
+  ggsave(plot = .x, filename = here("images", "avr_erp_plots_by_electrode_passive", paste0(.y, ".png")), device = "png", width = 8, height = 4)
 })
 
   
