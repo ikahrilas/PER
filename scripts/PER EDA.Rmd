@@ -15,16 +15,77 @@ library(pander)
 library(ggpubr)
 library(car)
 library(moments)
+library(patchwork)
 # load in data
 erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast.csv"))
 erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr.csv"))
 per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```
 
+```{r averaging and questionnaire variable selection, include = FALSE}
+lpp_elec_right <- c("B23", "B24", "B26", "B27")
+lpp_elec_left <- c("A27", "A26", "A30", "A29")
+epn_elec_right <- c("B25", "B26", "B24")
+epn_elec_left <- c("A28", "A27", "A29")
+# select variabes from questionnaire data set for analyses
+measures_int <- per_questionnaires %>% 
+  select(pid:valence, sex, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
+         anticipating:masq_aa, tmms_repair, depression)
+
+LPP_right <- erp_mast_wide %>%
+  select(all_of(lpp_elec_right), pid:prop_trials) %>% 
+  filter(between(ms, 400, 1000)) %>%
+  pivot_longer(., cols = all_of(lpp_elec_right), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(LPP_right = mean(mv, na.rm = TRUE),
+            prop_trials = mean(prop_trials, na.rm = TRUE))
+
+LPP_left <- erp_mast_wide %>%
+  select(all_of(lpp_elec_left), pid:prop_trials) %>% 
+  filter(between(ms, 400, 1000)) %>%
+  pivot_longer(., cols = all_of(lpp_elec_left), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(LPP_left = mean(mv, na.rm = TRUE))
+
+EPN_right <- erp_avr_wide %>%
+  select(all_of(epn_elec_right), pid:prop_trials) %>% 
+  filter(between(ms, 240, 375)) %>%
+  pivot_longer(., cols = all_of(epn_elec_right), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(EPN_right = mean(mv, na.rm = TRUE))
+
+EPN_left <- erp_avr_wide %>%
+  select(all_of(epn_elec_left), pid:prop_trials) %>% 
+  filter(between(ms, 240, 375)) %>%
+  pivot_longer(., cols = all_of(epn_elec_left), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(EPN_left = mean(mv, na.rm = TRUE))
+```
+
+Join all the tibbles together
+```{r join all tibbles together, include=FALSE}
+#join all LPP tibbles plus right frontal
+per_erp <- left_join(LPP_left, LPP_right, by = c("pid", "block")) %>%
+  left_join(EPN_left, by = c("pid", "block")) %>%
+  left_join(EPN_right, by = c("pid", "block")) %>%
+  left_join(measures_int, by = c("pid", "block"))
+```
+
+Change variable classes for parsimonious exploration and analysis
+
+```{r change variable classes}
+# pid as character type
+per_erp$pid <- as.character(per_erp$pid)
+# block as factor
+per_erp$block <- as.factor(per_erp$block)
+per_erp <- per_erp %>% 
+  select(pid, block, prop_trials, everything())
+```
 ## Questionnaire Descriptive Statisitcs
 
 ```{r descriptive stats on variables of interest}
 per_erp %>% 
+  ungroup() %>% 
   summarize("PA Mean" = mean(pos_affectivity, na.rm = TRUE),
             "PA SD" = sd(pos_affectivity, na.rm = TRUE),
             "NA Mean" = mean(neg_affectivity, na.rm = TRUE),
@@ -34,20 +95,25 @@ per_erp %>%
   pander(split.tables = 200, caption = "PA = Positive Affectivity, NA = Negative Affectivity, StM = Savoring the Moment")
 ```
 
-## LPP Descriptive Statistics by Block
+## EEG Descriptive Statistics by Block
 
 ```{r descriptive statistics for LPP}
 per_erp %>% 
   group_by(block) %>% 
-  summarize("LPP Mean" = mean(LPP, na.rm = TRUE),
-            "LPP SD" = sd(LPP, na.rm = TRUE),
+  summarize("LPP Right Mean" = mean(LPP_right, na.rm = TRUE),
+            "LPP Right SD" = sd(LPP_right, na.rm = TRUE),
+            "LPP Left Mean" = mean(LPP_left, na.rm = TRUE),
+            "LPP Left SD" = sd(LPP_left, na.rm = TRUE),
+            "EPN Right Mean" = mean(EPN_right, na.rm = TRUE),
+            "EPN Right SD" = sd(EPN_right, na.rm = TRUE),
+            "EPN Left Mean" = mean(EPN_left, na.rm = TRUE),
+            "EPN Left SD" = sd(EPN_left, na.rm = TRUE),
             "Valence Mean" = mean(valence, na.rm = TRUE),
             "Valence SD" = sd(valence, na.rm = TRUE),
             "Arousal Mean" = mean(arousal, na.rm = TRUE),
             "Arousal SD" = sd(arousal, na.rm = TRUE), 
             "Difficulty Mean" = mean(difficulty, na.rm = TRUE),
-            "Difficulty SD" = sd(difficulty, na.rm = TRUE)) %>% 
-  pander()
+            "Difficulty SD" = sd(difficulty, na.rm = TRUE))
 ```
 
 # Normality Tests
@@ -147,26 +213,33 @@ shapiro.test(pid_StM$savoring_moment) %>%
 ## LPP
 
 ### Histograms and QQplots for each block
-```{r histograms and qqplots for LPP for each block, warning = FALSE}
-LPP_by_pid <- per_erp %>% 
+```{r histograms and qqplots for LPP and EPN for each block, warning = FALSE, message = FALSE}
+eeg_by_pid <- per_erp %>% 
   group_by(pid, block) %>% 
-  summarize(LPP = mean(LPP, na.rm = TRUE))
+  summarize(LPP_right = mean(LPP_right, na.rm = TRUE),
+            LPP_left = mean(LPP_left, na.rm = TRUE),
+            EPN_right = mean(EPN_right, na.rm = TRUE),
+            EPN_left = mean(EPN_left, na.rm = TRUE))
 
-LPP_hist_qq <- function(cond, title) {
-LPP_by_pid %>% 
-  filter(block == cond) %>% 
-  gghistogram(., "LPP", title = title) %>% 
-    print()
-LPP_by_pid %>% 
-  filter(block == cond) %>% 
-  ggqqplot(., "LPP", title = title)
-invisible(cond)
+hist_qq_fun <- function(block, component) {
+histogram <- eeg_by_pid %>% 
+  filter(block == block) %>% 
+  select(.data[[component]]) %>% 
+  gghistogram(., x = component)
+qq <- eeg_by_pid %>% 
+  filter(block == block) %>% 
+  select(.data[[component]]) %>% 
+  ggqqplot(., component)
+(histogram | qq) +
+  plot_annotation(title = paste(block, component))
 }
 
-conditions <- unique(LPP_by_pid$block)
-cond_names <- c(paste("Negative", c("Decrease", "Increase", "Watch")), "Neutral Watch", paste("Positive", c("Decrease", "Increase", "Watch")))
 
-map2(conditions, cond_names, ~ LPP_hist_qq(cond = .x, title = .y))
+blocks <- unique(as.character(eeg_by_pid$block))
+components <- names(eeg_by_pid)[3:6]
+
+map(components, ~map(blocks, ~hist_qq_fun(block = .x, component = .y), .y = .x))
+# this is not correct, but progress
 ```
 
 ```{r shapiro-wilk tests for normality}
