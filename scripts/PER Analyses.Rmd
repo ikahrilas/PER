@@ -28,13 +28,13 @@ measures_int <- per_questionnaires %>%
   select(pid:valence, sex, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
          anticipating:masq_aa, tmms_repair, depression)
 
-
 LPP_right <- erp_mast_wide %>%
   select(all_of(lpp_elec_right), pid:prop_trials) %>% 
   filter(between(ms, 400, 1000)) %>%
   pivot_longer(., cols = all_of(lpp_elec_right), names_to = "electrode", values_to = "mv") %>% 
   group_by(pid, block) %>% 
-  summarize(LPP_right = mean(mv, na.rm = TRUE))
+  summarize(LPP_right = mean(mv, na.rm = TRUE),
+            prop_trials = mean(prop_trials, na.rm = TRUE))
 
 LPP_left <- erp_mast_wide %>%
   select(all_of(lpp_elec_left), pid:prop_trials) %>% 
@@ -75,30 +75,6 @@ Change variable classes for parsimonious exploration and analysis
 per_dat$pid <- as.character(per_dat$pid)
 # block as factor
 per_dat$block <- as.factor(per_dat$block)
-```
-
-Rename block variable levels in per_int to match the levels in the ERP data so that LPP data and questionnaire data can be merged
-
-```{r rename block conditions}
-levels(per_int$block) <- c("Neg_Dec",
-                           "Neg_Inc",
-                           "Neg_Watch",
-                           "Neu_Watch",
-                           "Pos_Dec",
-                           "Pos_Inc",
-                           "Pos_Watch")
-```
-
-Merge erp data and questionnaire data together and filter out cases where there is no ERP data.
-
-```{r merge ERP data and questionnaire data}
-per_erp <- full_join(LPP_total, per_int, by = c("pid", "block")) %>%
-  drop_na("0_to_400_LPP")
-#rename LPP 300 to 800 variable to just LPP, for some reason lmer function doesn't behave when variable names contain numbers
-per_erp <- per_erp %>% 
-  rename("LPP" = "400_to_1000_LPP")
-# save this dataset to the home directory
-write_csv(per_erp, "per_erp.csv")
 ```
 
 Get descriptive statistics
