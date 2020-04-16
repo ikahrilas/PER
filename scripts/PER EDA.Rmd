@@ -307,7 +307,7 @@ eeg_by_pid_filter %>%
 map(components, ~map(blocks, ~hist_qq_fun_filter(trial = .x, component = .y), .y = .x))
 ```
 
-Create second dataset with outliers omitted. Create average LPP and EPN variables. Will inspect lateralization effects in more detail later.
+Create second dataset with outliers omitted. Create average LPP and EPN variables as well as variable indicating lateralization
 
 ```{r manipulate the dataset to facilitate bivariate analyses}
 # construct a second data frame without the outlier datapoints
@@ -323,16 +323,53 @@ per_erp <- per_erp %>%
 per_erp_filter <- per_erp_filter %>% 
   mutate(LPP_avg = (LPP_right + LPP_left) / 2,
          EPN_avg = (EPN_right + EPN_left) / 2)
+# create side variable for lateralization in both data sets
+tmp_LPP <- per_erp %>% 
+  select(-contains("EPN_")) %>% 
+  pivot_longer(c(LPP_right, LPP_left, LPP_avg), names_to = "lateralization", values_to = "LPP") %>% 
+  mutate(lateralization = str_remove(lateralization, "LPP_")) %>% 
+  mutate(lateralization = as.factor(lateralization))
+tmp_EPN <- per_erp %>% 
+  select(-contains("LPP_")) %>% 
+  pivot_longer(c(EPN_right, EPN_left, EPN_avg), names_to = "lateralization", values_to = "EPN") %>% 
+  mutate(lateralization = str_remove(lateralization, "EPN_")) %>% 
+  mutate(lateralization = as.factor(lateralization)) %>% 
+  select(pid, block, EPN, lateralization)
+per_erp_lat <- full_join(tmp_LPP, tmp_EPN, by = (c("pid", "block", "lateralization"))) %>% 
+  select(pid, block, prop_trials, LPP, EPN, lateralization, everything())
+# filtered dataset
+tmp_LPP_filter <- per_erp_filter %>% 
+  select(-contains("EPN")) %>% 
+  pivot_longer(c(LPP_right, LPP_left, LPP_avg), names_to = "lateralization", values_to = "LPP") %>% 
+  mutate(lateralization = str_remove(lateralization, "LPP_")) %>% 
+  mutate(lateralization = as.factor(lateralization))
+tmp_EPN_filter <- per_erp_filter %>% 
+  select(-contains("LPP")) %>% 
+  pivot_longer(c(EPN_right, EPN_left, EPN_avg), names_to = "lateralization", values_to = "EPN") %>% 
+  mutate(lateralization = str_remove(lateralization, "EPN_")) %>% 
+  mutate(lateralization = as.factor(lateralization)) %>% 
+  select(pid, block, EPN, lateralization)
+per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = (c("pid", "block", "lateralization"))) %>% 
+  select(pid, block, prop_trials, LPP, EPN, lateralization, everything())
 ```
 
 # Bivariate Relationships
 
 ## LPP, EPN, and block condition
 
-```{r visualize LPP by block}
-ggplot(per_erp_int, aes(block, LPP)) +
+```{r visualize LPP by block, warning=FALSE}
+ggplot(per_erp_lat, aes(block, LPP, color = lateralization)) +
   geom_boxplot() +
-  ggtitle("Box and whisker plots for each block")
+  ggtitle("LPP box and whisker plots for each block")
+ggplot(per_erp_lat_filter, aes(block, LPP, color = lateralization)) +
+  geom_boxplot() + 
+  ggtitle("LPP box and whisker plots for each block\nwith filtered dataset")
+ggplot(per_erp, aes(block, EPN_avg)) +
+  geom_boxplot() +
+  ggtitle("EPN box and whisker plots for each block")
+ggplot(per_erp_filter, aes(block, EPN_avg)) +
+  geom_boxplot() +
+  ggtitle("EPN box and whisker plots for each block\nwith filtered dataset")
 ```
 
 ```{r ANOVAs}
