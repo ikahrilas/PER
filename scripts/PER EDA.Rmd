@@ -14,7 +14,9 @@ library(here)
 library(pander)
 library(ggpubr)
 library(car)
+library(robustlmm)
 library(moments)
+library(modelbased)
 library(patchwork)
 # load in data
 erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast.csv"))
@@ -358,31 +360,67 @@ per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = (c("pid", "
 ## LPP, EPN, and block condition
 
 ```{r visualize LPP by block, warning=FALSE}
-ggplot(per_erp_lat, aes(block, LPP, color = lateralization)) +
+# re-order factor levels for site for more sensible plotting
+per_erp_lat <- per_erp_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right")))
+per_erp_filter_lat <- per_erp_filter_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right")))
+# box and whisker plots
+per_erp_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  ggplot(., aes(block, LPP, color = lateralization)) +
   geom_boxplot() +
   ggtitle("LPP box and whisker plots for each block")
-ggplot(per_erp_lat_filter, aes(block, LPP, color = lateralization)) +
+per_erp_filter_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  ggplot(., aes(block, LPP, color = lateralization)) +
   geom_boxplot() + 
   ggtitle("LPP box and whisker plots for each block\nwith filtered dataset")
-ggplot(per_erp, aes(block, EPN_avg)) +
+per_erp_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  ggplot(., aes(block, EPN, color = lateralization)) +
   geom_boxplot() +
   ggtitle("EPN box and whisker plots for each block")
-ggplot(per_erp_filter, aes(block, EPN_avg)) +
+per_erp_filter_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  ggplot(., aes(block, EPN, color = lateralization)) +
   geom_boxplot() +
   ggtitle("EPN box and whisker plots for each block\nwith filtered dataset")
 ```
 
-```{r ANOVAs}
-per_erp_int$block <- as.factor(per_erp_int$block)
-per_erp_int$block <- relevel(per_erp_int$block, "Neu_Watch")
-per_erp_int_watch <- per_erp_int %>% 
-  filter(block %in% c("Neu_Watch", "Pos_Watch", "Neg_Watch"))
-mod_block <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_int)
-print(psycho::analyze(mod_block))
-mod_block_arousal <- lmerTest::lmer(arousal ~ block + (1|pid), data = per_erp_int)
-psycho::analyze(mod_block_arousal)
-mod_block_valence <- lmerTest::lmer(valence ~ block + (1|pid), data = per_erp_int)
-psycho::analyze(mod_block_valence)
+```{r contrasts, message = FALSE, warning = FALSE}
+# unfiltered LPP
+per_erp_lat$block <- relevel(per_erp_lat$block, "Neu_Watch")
+block_mod_lpp <- lmerTest::lmer(LPP ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat)
+assumption_plots(block_mod_lpp)
+performance::check_model(block_mod_lpp, panel = FALSE)
+summary(block_mod)
+# contrasts
+emm_LPP <- emmeans(block_mod, pairwise ~ lateralization | block)
+emmip(block_mod, block ~ lateralization) # plot
+
+# filtered LPP
+block_mod_lpp_filter <- lmerTest::lmer(LPP ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
+summary(block_mod_filter)
+performance::check_model(block_mod_lpp_filter, panel = FALSE)
+# contrasts
+emm_LPP_filter <- emmeans(block_mod_filter, pairwise ~ lateralization | block)
+emmip(block_mod_filter, block ~ lateralization) # plot
+
+# unfiltered EPN
+block_mod_epn <- lmerTest::lmer(EPN ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat)
+summary(block_mod_epn)
+performance::check_model(block_mod_epn, panel = FALSE)
+# contrasts
+emm_EPN <- emmeans(block_mod_epn, pairwise ~ lateralization | block)
+emmip(block_mod_epn, block ~ lateralization) # plot
+# filtered EPN
+block_mod_epn_filter <- lmerTest::lmer(EPN ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
+summary(block_mod_epn_filter)
+performance::check_model(block_mod_epn_filter, panel = FALSE)
+# contrasts
+emm_EPN_filter <- emmeans(block_mod_epn_filter, pairwise ~ lateralization | block)
+emmip(block_mod_epn_filter, block ~ lateralization) # plot
 ```
 
 
