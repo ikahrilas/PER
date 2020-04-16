@@ -239,125 +239,95 @@ components <- names(eeg_by_pid)[3:6]
 map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 ```
 
-```{r shapiro-wilk tests for normality}
-shapiro_LPP <- function(condition, title) {
-result <- shapiro.test(pull(filter(LPP_by_pid, block == condition))) %>% 
-  pander(caption = title)
-  }
-```
-
-```{r negative decrease}
-shapiro_LPP("Neg_Dec", "Negative Decrease")
-```
-
-```{r negative increase}
-shapiro_LPP("Neg_Inc", "Negative Increase")
-```
-
-```{r negative watch}
-shapiro_LPP("Neg_Watch", "Negative Watch")
-```
-
-```{r neutral watch}
-shapiro_LPP("Neu_Watch", "Neutral Watch")
-```
-
-```{r positive decrease}
-shapiro_LPP("Pos_Dec", "Positive Decrease")
-```
-```{r positive increase}
-shapiro_LPP("Pos_Inc", "Positive Increase")
-```
-
-```{r positive watch}
-shapiro_LPP("Pos_Watch", "Positive Watch")
-```
-
-Several of the conditions have LPPs that are non-normally distributed with some outliers. Let's inspect these extreme cases.
+Inspect some of the extreme cases indicated in the histograms.
 
 ```{r examine extreme cases, warning=FALSE,message=FALSE}
-extreme_cases <- function(condition, name) {
-(cases <- LPP_by_pid %>% 
-  filter(block == condition,
-         LPP > 17))
-cases %>% 
-  select(pid) %>% 
-  pull()
-}
-# this outputs participants that have LPP amplitudes greater than 17, which denote the extreme cases we observed in the histograms and qqplots.
-map2(conditions, cond_names, ~ extreme_cases(.x, .y)) %>% 
-  unlist() %>% 
-  unique()
+# character string of outlier pids
+outlier_pids <- unique(c(eeg_by_pid %>% 
+                           filter(block == "Neg_Dec", LPP_right < -10) %>% 
+                           select(pid) %>% 
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Neu_Watch", LPP_right < -9, LPP_right > 10) %>% 
+                           select(pid) %>% 
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Pos_Inc", LPP_right < -9) %>% 
+                           select(pid) %>% 
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Neu_Watch", LPP_left > 10) %>% 
+                           select(pid) %>% 
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Neg_Dec", EPN_right < -20) %>% 
+                           select(pid) %>% 
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Pos_Dec", EPN_right < -20) %>% 
+                           select(pid) %>% 
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Pos_Inc", EPN_right < -20) %>% 
+                           select(pid) %>% 
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Neu_Watch", EPN_left > 15) %>% 
+                           select(pid) %>% 
+                           pull()))
+                  
+# inspect cases
+eeg_by_pid %>% 
+  filter(pid %in% outlier_pids)
+
+# make duplicate data frame with extreme values replaced with NA
+eeg_by_pid_filter <- eeg_by_pid
+
+eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right > 10 | eeg_by_pid_filter$LPP_right < -9] <- NA
+eeg_by_pid_filter$LPP_left[eeg_by_pid_filter$LPP_left > 12] <- NA
+eeg_by_pid_filter$EPN_right[eeg_by_pid_filter$EPN_right < -20] <- NA
+eeg_by_pid_filter$EPN_left[eeg_by_pid_filter$EPN_left > 15] <- NA
 ```
 
-Our extreme cases are 206201843 and 206201840. Reviewing our EEG trial notes indicates that these two particpants were moving throughout the PER task. Review of their raw data in BESA indicated abnormalities with participant 206201843. However, participant 206201840's data appeared valid. Therefore, participant 206201843 will be removed, but participant 206201840 will remain. Visualizations and normality tests will be re-run without 206201843.
+Our extreme cases are `outlier_pids`. Re-run histograms and QQ plots with the extreme datapoints omitted. 
 
 ```{r remove noisy participants, warning=FALSE, message=FALSE}
-LPP_pid_rem <- LPP_by_pid %>% 
-  filter(!(pid %in% c(206201843)))
-# re-run normality tests to see what's going on
-LPP_hist_qq <- function(cond, title) {
-LPP_pid_rem %>% 
-  filter(block == cond) %>% 
-  gghistogram(., "LPP", title = title) %>% 
-    print()
-LPP_pid_rem %>% 
-  filter(block == cond) %>% 
-  ggqqplot(., "LPP", title = title)
-invisible(cond)
+hist_qq_fun_filter <- function(trial, component) {
+(eeg_by_pid_filter %>% 
+  filter(block == trial) %>% 
+  select(component) %>% 
+  gghistogram(., x = component) |
+eeg_by_pid_filter %>% 
+  filter(block == trial) %>% 
+  select(component) %>% 
+  ggqqplot(., component)) +
+  plot_annotation(title = paste(trial, component))
 }
 
-conditions <- unique(LPP_by_pid$block)
-cond_names <- c(paste("Negative", c("Decrease", "Increase", "Watch")), "Neutral Watch", paste("Positive", c("Decrease", "Increase", "Watch")))
-
-map2(conditions, cond_names, ~ LPP_hist_qq(cond = .x, title = .y))
+map(components, ~map(blocks, ~hist_qq_fun_filter(trial = .x, component = .y), .y = .x))
 ```
 
-```{r shapiro wilk tests with filtered data}
-shapiro_LPP <- function(condition, title) {
-shapiro.test(pull(filter(LPP_pid_rem, block == condition))) %>%
-  pander(caption = title)
-}
-
-shapiro_LPP("Neg_Dec", "Negative Decrease")
-```
-
-```{r}
-shapiro_LPP("Neg_Inc", "Negative Increase")
-```
-
-```{r}
-shapiro_LPP("Neg_Watch", "Negative Watch")
-```
-
-```{r}
-shapiro_LPP("Neu_Watch", "Neutral Watch")
-```
-
-```{r}
-shapiro_LPP("Pos_Dec", "Positive Decrease")
-```
-
-```{r}
-shapiro_LPP("Pos_Inc", "Positive Increase")
-```
-
-```{r}
-shapiro_LPP("Pos_Watch", "Positive Watch")
-```
-
-Some are still significantly different from the normal distribution, even with the removal of the extreme case. This indicates that a non-parametric technique should be utilized for tests that assume normal data. 
+Create second dataset with outliers omitted. Create average LPP and EPN variables. Will inspect lateralization effects in more detail later.
 
 ```{r manipulate the dataset to facilitate bivariate analyses}
-# construct a second data frame without the outlier cases
-per_erp_int <- per_erp %>% 
-  select(pid, block, LPP, arousal:valence, anticipating:erq_suppression) %>% 
-    filter(!(pid %in% c(206201843)))
+# construct a second data frame without the outlier datapoints
+per_erp_filter <- per_erp
+per_erp_filter$LPP_right[per_erp_filter$LPP_right > 10 | per_erp_filter$LPP_right < -9] <- NA
+per_erp_filter$LPP_left[per_erp_filter$LPP_left > 12] <- NA
+per_erp_filter$EPN_right[per_erp_filter$EPN_right < -20] <- NA
+per_erp_filter$EPN_left[per_erp_filter$EPN_left > 15] <- NA
+# average eeg components
+per_erp <- per_erp %>% 
+  mutate(LPP_avg = (LPP_right + LPP_left) / 2,
+         EPN_avg = (EPN_right + EPN_left) / 2)
+per_erp_filter <- per_erp_filter %>% 
+  mutate(LPP_avg = (LPP_right + LPP_left) / 2,
+         EPN_avg = (EPN_right + EPN_left) / 2)
 ```
 
 # Bivariate Relationships
 
-## LPP and block condition
+## LPP, EPN, and block condition
 
 ```{r visualize LPP by block}
 ggplot(per_erp_int, aes(block, LPP)) +
