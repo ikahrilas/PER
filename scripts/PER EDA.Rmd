@@ -221,25 +221,22 @@ eeg_by_pid <- per_erp %>%
             EPN_right = mean(EPN_right, na.rm = TRUE),
             EPN_left = mean(EPN_left, na.rm = TRUE))
 
-hist_qq_fun <- function(block, component) {
-histogram <- eeg_by_pid %>% 
-  filter(block == block) %>% 
-  select(.data[[component]]) %>% 
-  gghistogram(., x = component)
-qq <- eeg_by_pid %>% 
-  filter(block == block) %>% 
-  select(.data[[component]]) %>% 
-  ggqqplot(., component)
-(histogram | qq) +
-  plot_annotation(title = paste(block, component))
+hist_qq_fun <- function(trial, component) {
+(eeg_by_pid %>% 
+  filter(block == trial) %>% 
+  select(component) %>% 
+  gghistogram(., x = component) |
+eeg_by_pid %>% 
+  filter(block == trial) %>% 
+  select(component) %>% 
+  ggqqplot(., component)) +
+  plot_annotation(title = paste(trial, component))
 }
-
 
 blocks <- unique(as.character(eeg_by_pid$block))
 components <- names(eeg_by_pid)[3:6]
 
-map(components, ~map(blocks, ~hist_qq_fun(block = .x, component = .y), .y = .x))
-# this is not correct, but progress
+map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 ```
 
 ```{r shapiro-wilk tests for normality}
