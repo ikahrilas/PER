@@ -272,7 +272,24 @@ components <- names(eeg_by_pid)[3:6]
 
 map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 ```
-
+for revised lpp electrode selection
+```{r lpp rev selection}
+eeg_by_pid_rev <- per_erp_rev %>% 
+  group_by(pid, block) %>% 
+  summarize(LPP = mean(LPP, na.rm = TRUE))
+norm_rev_fun <- function(trial) {
+(eeg_by_pid_rev %>% 
+  filter(block == trial) %>% 
+  gghistogram(., x = "LPP") |
+eeg_by_pid_rev %>% 
+  filter(block == trial) %>% 
+  ggqqplot(., "LPP")) +
+  plot_annotation(title = paste(trial, "LPP"))
+}
+blocks <- unique(as.character(eeg_by_pid_rev$block))
+map(blocks, ~ norm_rev_fun(.x))
+```
+ 
 Inspect some of the extreme cases indicated in the histograms.
 
 ```{r examine extreme cases, warning=FALSE,message=FALSE}
@@ -321,6 +338,17 @@ eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right > 10 | eeg_by_pid_filter
 eeg_by_pid_filter$LPP_left[eeg_by_pid_filter$LPP_left > 12] <- NA
 eeg_by_pid_filter$EPN_right[eeg_by_pid_filter$EPN_right < -20] <- NA
 eeg_by_pid_filter$EPN_left[eeg_by_pid_filter$EPN_left > 15] <- NA
+
+# same for rev group
+outlier_pid_rev <- eeg_by_pid_rev %>% 
+  filter(block == "Neu_Watch", LPP > 10 | LPP < -8) %>% 
+  select(pid) %>% 
+  pull()
+
+eeg_by_pid_rev %>% 
+  filter(pid %in% outlier_pid_rev)
+
+eeg_by_pid_rev$LPP[eeg_by_pid_rev$LPP > 10 | eeg_by_pid_rev$LPP < -8] <- NA
 ```
 
 Our extreme cases are `outlier_pids`. Re-run histograms and QQ plots with the extreme datapoints omitted. 
@@ -340,7 +368,11 @@ eeg_by_pid_filter %>%
 
 map(components, ~map(blocks, ~hist_qq_fun_filter(trial = .x, component = .y), .y = .x))
 ```
-
+and also with revised lpp
+```{r}
+map(blocks, ~ norm_rev_fun(.x))
+```
+ 
 Create second dataset with outliers omitted. Create average LPP and EPN variables as well as variable indicating lateralization
 
 ```{r manipulate the dataset to facilitate bivariate analyses}
