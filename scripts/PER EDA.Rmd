@@ -466,28 +466,54 @@ report(mod_one_epn_lat)
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
 
 ```{r pos affectivity contrasts}
+# function for deriving Wald confidence intervals for robust models
+confint.rlmerMod <- function(object,parm,level=0.95) {
+  beta <- fixef(object)
+  if (missing(parm)) parm <- names(beta)
+  se <- sqrt(diag(vcov(object)))
+  z <- qnorm((1+level)/2)
+  ctab <- cbind(beta-z*se,beta+z*se)
+  colnames(ctab) <- stats:::format.perc(c((1-level)/2,(1+level)/2),
+                                        digits=3)
+  return(ctab[parm,])
+}
+
 mod_two_lpp <- lmerTest::lmer(LPP ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 # check assumptions
 check_model(mod_two_lpp, panel = FALSE)
 summary(mod_two_lpp)
-plot(rlmer(LPP ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg")))
+# some influential cases. try robust method for any differences in results
+mod_two_lpp_rob <- rlmer(LPP ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+confint.rlmerMod(mod_two_lpp_rob)
 
-pos_watch_contrast <- per_erp_int %>% 
-  filter(block == "Neu_Watch") %>%
-  rename("LPP_neu_watch" = LPP) %>% 
-  select(-block)
+# check model two with EPN as outcome
+mod_two_epn <- lmerTest::lmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+check_model(mod_two_epn, panel = FALSE)
+summary(mod_two_epn)
+rlmer()
 
-tmp <- per_erp_int %>% 
-  filter(block == "Pos_Watch") %>% 
-  rename("LPP_pos_watch" = LPP) %>% 
-  select(pid, LPP_pos_watch)
+# try robust model
+mod_two_epn_rob <- rlmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_two_epn_rob)
+confint.rlmerMod(mod_two_epn_rob)
 
-pos_watch_contrast <- full_join(pos_watch_contrast, tmp, by = "pid") %>% 
-  mutate(contrast = LPP_pos_watch - LPP_neu_watch)
-
-ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
-  geom_point() +
-  ggtitle("Positive affectivity and contrast between \nNeutral Watch and Positive Watch")
+#----- old code, might be useful down the line.
+# pos_watch_contrast <- per_erp_int %>% 
+#   filter(block == "Neu_Watch") %>%
+#   rename("LPP_neu_watch" = LPP) %>% 
+#   select(-block)
+# 
+# tmp <- per_erp_int %>% 
+#   filter(block == "Pos_Watch") %>% 
+#   rename("LPP_pos_watch" = LPP) %>% 
+#   select(pid, LPP_pos_watch)
+# 
+# pos_watch_contrast <- full_join(pos_watch_contrast, tmp, by = "pid") %>% 
+#   mutate(contrast = LPP_pos_watch - LPP_neu_watch)
+# 
+# ggplot(pos_watch_contrast, aes(pos_affectivity, contrast)) +
+#   geom_point() +
+#   ggtitle("Positive affectivity and contrast between \nNeutral Watch and Positive Watch")
 ```
 
 There doesn't appear to be any relationship between the two. We can derive a Pearson Product Moment correlation coefficient between contrasts and positive affectivity to validate this.
