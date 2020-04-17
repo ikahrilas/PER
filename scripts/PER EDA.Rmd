@@ -461,8 +461,7 @@ summary(mod_one_epn_lat)
 report(mod_one_epn_lat)
 ```
 
-
-## LPP and Positive Affectivity
+## Aim Two: LPP and Positive Affectivity
 
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
 
