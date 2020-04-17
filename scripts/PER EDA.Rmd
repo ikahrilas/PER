@@ -449,7 +449,7 @@ null_epn_model <- lmer(EPN ~ (1|pid), data = filter(per_erp_filter_lat, laterali
 icc(null_epn_model)
 # 76.5% of the  variance in EPN can be explained by between-participant effects
 # fit model one with EPN
-mod_one_epn <- lmerTest::lmer(EPN ~ block + (1|pid), data = filter(per_erp_filter_lat, lateralization == "avg"))
+mod_one_epn <- lmerTest::lmer(EPN ~ block + (1|pid), data = filter(per_erp_filter_lat, lateralization == "right"))
 # check assumptions
 check_model(mod_one_epn)
 summary(mod_one_epn)
@@ -466,6 +466,12 @@ report(mod_one_epn_lat)
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
 
 ```{r pos affectivity contrasts}
+mod_two_lpp <- lmerTest::lmer(LPP ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+# check assumptions
+check_model(mod_two_lpp, panel = FALSE)
+summary(mod_two_lpp)
+plot(rlmer(LPP ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg")))
+
 pos_watch_contrast <- per_erp_int %>% 
   filter(block == "Neu_Watch") %>%
   rename("LPP_neu_watch" = LPP) %>% 
