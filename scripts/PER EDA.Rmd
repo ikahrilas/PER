@@ -6,7 +6,6 @@ output:
   pdf_document: default
   html_document: default
 ---
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
@@ -49,7 +48,7 @@ LPP_right <- erp_mast_wide %>%
 
 LPP_rev <- erp_mast_wide %>%
   select(all_of(lpp_elec_rev), pid:prop_trials) %>% 
-  filter(between(ms, 400, 900)) %>%
+  filter(between(ms, 400, 800)) %>%
   pivot_longer(., cols = all_of(lpp_elec_rev), names_to = "electrode", values_to = "mv") %>% 
   group_by(pid, block) %>% 
   summarize(LPP = mean(mv, na.rm = TRUE),
@@ -382,6 +381,8 @@ per_erp_filter$LPP_right[per_erp_filter$LPP_right > 10 | per_erp_filter$LPP_righ
 per_erp_filter$LPP_left[per_erp_filter$LPP_left > 12] <- NA
 per_erp_filter$EPN_right[per_erp_filter$EPN_right < -20] <- NA
 per_erp_filter$EPN_left[per_erp_filter$EPN_left > 15] <- NA
+# for rev LPP as well
+per_erp_rev$LPP[per_erp_rev$LPP > 12 | per_erp_rev$LPP < -10] <- NA
 # average eeg components
 per_erp <- per_erp %>% 
   mutate(LPP_avg = (LPP_right + LPP_left) / 2,
@@ -445,6 +446,10 @@ per_erp_filter_lat %>%
   ggplot(., aes(block, EPN, color = lateralization)) +
   geom_boxplot() +
   ggtitle("EPN box and whisker plots for each block\nwith filtered dataset")
+per_erp_rev %>%
+  ggplot(., aes(block, LPP)) +
+  geom_boxplot() +
+  ggtitle("Revised LPP box and whisker plots for each block")
 ```
 
 Based on these observations, the filtered dataset will be used for hypothesis testing.
@@ -492,6 +497,12 @@ mod_avg_lpp <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %
 emmeans(mod_avg_lpp, pairwise ~ block)
 mod_avg_epn <- lmerTest::lmer(EPN ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 emmeans(mod_avg_epn, pairwise ~ block)
+
+# revised lpp
+per_erp_rev$block <- relevel(per_erp_rev$block, "Neu_Watch")
+block_mod_lpp_rev <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_rev)
+summary(block_mod_lpp_rev)
+emmeans(block_mod_lpp_rev, pairwise ~ block)
 ```
 
 ## Aim One: Passive Blocks
@@ -527,6 +538,13 @@ r2beta(mod_one_epn)
 mod_one_epn_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
 summary(mod_one_epn_lat)
 report(mod_one_epn_lat)
+# revised lpp as outcome
+null_lpp_rev <- lmerTest::lmer(LPP ~ (1|pid), data = per_erp_rev)
+icc(null_lpp_rev)
+# 36.6% of the variance is accounted for by between participant differences
+mod_one_lpp_rev <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_rev)
+check_model(mod_one_lpp_rev)
+summary(mod_one_lpp_rev)
 ```
 
 ## Aim Two: LPP and Positive Affectivity
