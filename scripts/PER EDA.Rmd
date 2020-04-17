@@ -30,6 +30,7 @@ per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 
 ```{r averaging and questionnaire variable selection, include = FALSE}
 lpp_elec_right <- c("B23", "B24", "B26", "B27")
+lpp_elec_rev <- c("B27", "B22", "B28", "B29", "A30", "A25")
 lpp_elec_left <- c("A27", "A26", "A30", "A29")
 epn_elec_right <- c("B25", "B26", "B24")
 epn_elec_left <- c("A28", "A27", "A29")
@@ -44,6 +45,14 @@ LPP_right <- erp_mast_wide %>%
   pivot_longer(., cols = all_of(lpp_elec_right), names_to = "electrode", values_to = "mv") %>% 
   group_by(pid, block) %>% 
   summarize(LPP_right = mean(mv, na.rm = TRUE),
+            prop_trials = mean(prop_trials, na.rm = TRUE))
+
+LPP_rev <- erp_mast_wide %>%
+  select(all_of(lpp_elec_rev), pid:prop_trials) %>% 
+  filter(between(ms, 400, 900)) %>%
+  pivot_longer(., cols = all_of(lpp_elec_rev), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(LPP = mean(mv, na.rm = TRUE),
             prop_trials = mean(prop_trials, na.rm = TRUE))
 
 LPP_left <- erp_mast_wide %>%
@@ -75,6 +84,8 @@ per_erp <- left_join(LPP_left, LPP_right, by = c("pid", "block")) %>%
   left_join(EPN_left, by = c("pid", "block")) %>%
   left_join(EPN_right, by = c("pid", "block")) %>%
   left_join(measures_int, by = c("pid", "block"))
+#separate dataframe for revised lpp electrodes
+per_erp_rev <- left_join(LPP_rev, measures_int, by = c("pid", "block"))
 ```
 
 Change variable classes for parsimonious exploration and analysis
@@ -85,6 +96,11 @@ per_erp$pid <- as.character(per_erp$pid)
 # block as factor
 per_erp$block <- as.factor(per_erp$block)
 per_erp <- per_erp %>% 
+  select(pid, block, prop_trials, everything())
+
+per_erp_rev$pid <- as.character(per_erp_rev$pid)
+per_erp_rev$block <- as.factor(per_erp_rev$block)
+per_erp_rev <- per_erp_rev %>% 
   select(pid, block, prop_trials, everything())
 ```
 ## Questionnaire Descriptive Statisitcs
@@ -114,6 +130,18 @@ per_erp %>%
             "EPN Right SD" = sd(EPN_right, na.rm = TRUE),
             "EPN Left Mean" = mean(EPN_left, na.rm = TRUE),
             "EPN Left SD" = sd(EPN_left, na.rm = TRUE),
+            "Valence Mean" = mean(valence, na.rm = TRUE),
+            "Valence SD" = sd(valence, na.rm = TRUE),
+            "Arousal Mean" = mean(arousal, na.rm = TRUE),
+            "Arousal SD" = sd(arousal, na.rm = TRUE), 
+            "Difficulty Mean" = mean(difficulty, na.rm = TRUE),
+            "Difficulty SD" = sd(difficulty, na.rm = TRUE))
+
+# for revised lpp electrode selection
+per_erp_rev %>% 
+  group_by(block) %>% 
+  summarize("LPP Mean" = mean(LPP, na.rm = TRUE),
+            "LPP SD" = sd(LPP, na.rm = TRUE),
             "Valence Mean" = mean(valence, na.rm = TRUE),
             "Valence SD" = sd(valence, na.rm = TRUE),
             "Arousal Mean" = mean(arousal, na.rm = TRUE),
@@ -407,6 +435,7 @@ summary(block_mod_lpp_filter)
 performance::check_model(block_mod_lpp_filter, panel = FALSE)
 # contrasts
 emmeans(block_mod_lpp_filter, pairwise ~ lateralization | block)
+emmeans(block_mod_lpp_filter, pairwise ~ block | lateralization)
 emmip(block_mod_filter, block ~ lateralization) # plot
 
 # unfiltered EPN
@@ -423,7 +452,14 @@ summary(block_mod_epn_filter)
 performance::check_model(block_mod_epn_filter, panel = FALSE)
 # contrasts
 emmeans(block_mod_epn_filter, pairwise ~ lateralization | block)
+emmeans(block_mod_epn_filter, pairwise ~ block | lateralization)
 emmip(block_mod_epn_filter, block ~ lateralization) # plot
+
+#---- all possible block contrasts for average conditions
+mod_avg_lpp <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+emmeans(mod_avg_lpp, pairwise ~ block)
+mod_avg_epn <- lmerTest::lmer(EPN ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+emmeans(mod_avg_epn, pairwise ~ block)
 ```
 
 ## Aim One: Passive Blocks
@@ -518,31 +554,53 @@ confint.rlmerMod(mod_two_epn_rob)
 
 There doesn't appear to be any relationship between the two. We can derive a Pearson Product Moment correlation coefficient between contrasts and positive affectivity to validate this.
 
-```{r}
-cor.test(pos_watch_contrast$contrast, pos_watch_contrast$pos_affectivity) %>% pander()
-```
-
 ## LPP and savoring the  moment
 
 Derive contrasts between positive watch and positive increase conditions and observe relationship between this contrast and savoring the moment, which is in line with the study hypothesis that the LPP contrast between the positive watch and positive increase conditions will be moderated by savoring the moment.
 
-```{r savoring moment contrasts}
-pos_inc_contrast <- per_erp_int %>% 
-  filter(block == "Pos_Watch") %>%
-  rename("LPP_pos_watch" = LPP) %>% 
-  select(-block)
+```{r savoring moment contrasts, message=FALSE}
+# relevel block variable
+per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Pos_Watch")
+per_erp_filter_lat$lateralization <- relevel(per_erp_filter_lat$lateralization, "right")
+# run model with just block variable to determine difference bewteen positive watch and positive increase
+mod_pos <- lmerTest::lmer(EPN ~ block * lateralization + (1|pid), data = per_erp_filter_lat)
+summary(mod_pos)
+# model 3
+mod_3_lpp <- lmerTest::lmer(LPP ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+check_model(mod_3_lpp, panel = FALSE)
+summary(mod_3_lpp)
+# check robust model
+mod_3_lpp_rob <- rlmer(LPP ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
+summary(mod_3_lpp_rob)
+confint.rlmerMod(mod_3_lpp_rob)
 
-tmp <- per_erp_int %>% 
-  filter(block == "Pos_Inc") %>% 
-  rename("LPP_pos_inc" = LPP) %>% 
-  select(pid, LPP_pos_inc)
+# model 3 with EPN
+mod_3_epn <- lmerTest::lmer(EPN ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+check_model(mod_3_epn)
+summary(mod_3_epn)
 
-pos_inc_contrast <- full_join(pos_inc_contrast, tmp, by = "pid") %>% 
-  mutate(contrast = LPP_pos_inc - LPP_pos_watch)
+#robust model
+mod_3_epn_rob <- rlmer(EPN ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_3_epn_rob)
 
-ggplot(pos_inc_contrast, aes(savoring_moment, contrast)) +
-  geom_jitter() +
-  ggtitle("Momentary savoring and contrast between \nPositive Watch and Positive Increase")
+
+#---- old code
+# pos_inc_contrast <- per_erp_int %>% 
+#   filter(block == "Pos_Watch") %>%
+#   rename("LPP_pos_watch" = LPP) %>% 
+#   select(-block)
+# 
+# tmp <- per_erp_int %>% 
+#   filter(block == "Pos_Inc") %>% 
+#   rename("LPP_pos_inc" = LPP) %>% 
+#   select(pid, LPP_pos_inc)
+# 
+# pos_inc_contrast <- full_join(pos_inc_contrast, tmp, by = "pid") %>% 
+#   mutate(contrast = LPP_pos_inc - LPP_pos_watch)
+# 
+# ggplot(pos_inc_contrast, aes(savoring_moment, contrast)) +
+#   geom_jitter() +
+#   ggtitle("Momentary savoring and contrast between \nPositive Watch and Positive Increase")
 ```
 
 Again, there does not appear to be a relationship between the two variables. Let's derive Pearson Product Moment correlation coefficient between the contrast and savoring the moment to confirm.
