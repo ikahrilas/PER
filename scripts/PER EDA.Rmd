@@ -15,9 +15,13 @@ library(pander)
 library(ggpubr)
 library(car)
 library(robustlmm)
+library(emmeans)
+library(easystats)
 library(moments)
 library(modelbased)
 library(patchwork)
+library(report)
+library(r2glmm)
 # load in data
 erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast.csv"))
 erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr.csv"))
@@ -360,11 +364,6 @@ per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = (c("pid", "
 ## LPP, EPN, and block condition
 
 ```{r visualize LPP by block, warning=FALSE}
-# re-order factor levels for site for more sensible plotting
-per_erp_lat <- per_erp_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right")))
-per_erp_filter_lat <- per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right")))
 # box and whisker plots
 per_erp_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
@@ -388,23 +387,26 @@ per_erp_filter_lat %>%
   ggtitle("EPN box and whisker plots for each block\nwith filtered dataset")
 ```
 
+Based on these observations, the filtered dataset will be used for hypothesis testing.
+
+## Contrasts between conditions
+
 ```{r contrasts, message = FALSE, warning = FALSE}
 # unfiltered LPP
 per_erp_lat$block <- relevel(per_erp_lat$block, "Neu_Watch")
 block_mod_lpp <- lmerTest::lmer(LPP ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat)
-assumption_plots(block_mod_lpp)
 performance::check_model(block_mod_lpp, panel = FALSE)
-summary(block_mod)
+summary(block_mod_lpp)
 # contrasts
-emm_LPP <- emmeans(block_mod, pairwise ~ lateralization | block)
+emmeans(block_mod_lpp, pairwise ~ lateralization | block)
 emmip(block_mod, block ~ lateralization) # plot
 
 # filtered LPP
 block_mod_lpp_filter <- lmerTest::lmer(LPP ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
-summary(block_mod_filter)
+summary(block_mod_lpp_filter)
 performance::check_model(block_mod_lpp_filter, panel = FALSE)
 # contrasts
-emm_LPP_filter <- emmeans(block_mod_filter, pairwise ~ lateralization | block)
+emmeans(block_mod_lpp_filter, pairwise ~ lateralization | block)
 emmip(block_mod_filter, block ~ lateralization) # plot
 
 # unfiltered EPN
@@ -412,15 +414,51 @@ block_mod_epn <- lmerTest::lmer(EPN ~ block*lateralization + (1|lateralization:p
 summary(block_mod_epn)
 performance::check_model(block_mod_epn, panel = FALSE)
 # contrasts
-emm_EPN <- emmeans(block_mod_epn, pairwise ~ lateralization | block)
+emmeans(block_mod_epn, pairwise ~ lateralization | block)
 emmip(block_mod_epn, block ~ lateralization) # plot
+
 # filtered EPN
 block_mod_epn_filter <- lmerTest::lmer(EPN ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
 summary(block_mod_epn_filter)
 performance::check_model(block_mod_epn_filter, panel = FALSE)
 # contrasts
-emm_EPN_filter <- emmeans(block_mod_epn_filter, pairwise ~ lateralization | block)
+emmeans(block_mod_epn_filter, pairwise ~ lateralization | block)
 emmip(block_mod_epn_filter, block ~ lateralization) # plot
+```
+
+## Aim One: Passive Blocks
+
+```{r hypothesis one, message=FALSE}
+# fit null model for LPP
+null_lpp_model <- lmer(LPP ~ (1|pid), data = filter(per_erp_filter_lat, lateralization == "avg"))
+# check intraclass correlation
+performance::icc(null_lpp_model)
+# 42.9% of the variance in LPP can be explained by between-participant effects.
+# relevel block variable
+per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Neu_Watch")
+# fit model one
+mod_one <- lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_filter_lat, lateralization == "avg"))
+# check assumptions
+check_model(mod_one)
+summary(mod_one)
+report(mod_one) # APA style reporting
+r2beta(mod_one) # semi-partial R2
+# fit model one, but with epn as outcome
+# ICC
+null_epn_model <- lmer(EPN ~ (1|pid), data = filter(per_erp_filter_lat, lateralization == "avg"))
+icc(null_epn_model)
+# 76.5% of the  variance in EPN can be explained by between-participant effects
+# fit model one with EPN
+mod_one_epn <- lmerTest::lmer(EPN ~ block + (1|pid), data = filter(per_erp_filter_lat, lateralization == "avg"))
+# check assumptions
+check_model(mod_one_epn)
+summary(mod_one_epn)
+report(mod_one_epn)
+r2beta(mod_one_epn)
+# add in lateralization interaction term
+mod_one_epn_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
+summary(mod_one_epn_lat)
+report(mod_one_epn_lat)
 ```
 
 
