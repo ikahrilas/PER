@@ -272,7 +272,7 @@ components <- names(eeg_by_pid)[3:6]
 map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 ```
 for revised lpp electrode selection
-```{r lpp rev selection}
+```{r lpp rev selection, message=FALSE, warning=FALSE}
 eeg_by_pid_rev <- per_erp_rev %>% 
   group_by(pid, block) %>% 
   summarize(LPP = mean(LPP, na.rm = TRUE))
@@ -368,7 +368,7 @@ eeg_by_pid_filter %>%
 map(components, ~map(blocks, ~hist_qq_fun_filter(trial = .x, component = .y), .y = .x))
 ```
 and also with revised lpp
-```{r}
+```{r, warning=FALSE, message=FALSE}
 map(blocks, ~ norm_rev_fun(.x))
 ```
  
@@ -457,46 +457,67 @@ Based on these observations, the filtered dataset will be used for hypothesis te
 ## Contrasts between conditions
 
 ```{r contrasts, message = FALSE, warning = FALSE}
-# unfiltered LPP
+# relevel factor variables
 per_erp_lat$block <- relevel(per_erp_lat$block, "Neu_Watch")
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+per_erp_lat$lateralization <- factor(per_erp_lat$lateralization, levels = c("left", "avg", "right"))
+per_erp_filter_lat$lateralization <- factor(per_erp_filter_lat$lateralization, levels = c("left", "avg", "right"))
+per_erp_rev$block <- relevel(per_erp_rev$block, "Neu_Watch")
+
+# unfiltered LPP
 block_mod_lpp <- lmerTest::lmer(LPP ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat)
 performance::check_model(block_mod_lpp, panel = FALSE)
 summary(block_mod_lpp)
 # contrasts
-emmeans(block_mod_lpp, pairwise ~ lateralization | block)
+emmeans(block_mod_lpp, pairwise ~ lateralization | block)$contrasts
 emmip(block_mod, block ~ lateralization) # plot
+# for interaction terms as well
+block_lpp_df <- as.data.frame(emmeans(block_mod_lpp, pairwise ~ lateralization * block ))
 
 # filtered LPP
 block_mod_lpp_filter <- lmerTest::lmer(LPP ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
 summary(block_mod_lpp_filter)
 performance::check_model(block_mod_lpp_filter, panel = FALSE)
 # contrasts
-emmeans(block_mod_lpp_filter, pairwise ~ lateralization | block)
-emmeans(block_mod_lpp_filter, pairwise ~ block | lateralization)
+emmeans(block_mod_lpp_filter, pairwise ~ lateralization | block)$contrasts
+means_block_lpp_filter <- emmeans(block_mod_lpp_filter, pairwise ~ lateralization | block)
+contrast(means_block_lpp_filter, "poly")
 emmip(block_mod_filter, block ~ lateralization) # plot
+# for interaction terms as well
+block_lpp_filter_df <- as.data.frame(emmeans(block_mod_lpp_filter, pairwise ~ lateralization * block ))
 
 # unfiltered EPN
 block_mod_epn <- lmerTest::lmer(EPN ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat)
 summary(block_mod_epn)
 performance::check_model(block_mod_epn, panel = FALSE)
 # contrasts
-emmeans(block_mod_epn, pairwise ~ lateralization | block)
+emmeans(block_mod_epn, pairwise ~ lateralization | block)$contrasts
+means_block_epn <- emmeans(block_mod_epn, pairwise ~ lateralization | block)
+contrast(means_block_epn, "poly")
 emmip(block_mod_epn, block ~ lateralization) # plot
+#for interaction terms as well
+block_epn_df <- as.data.frame(emmeans(block_mod_epn, pairwise ~ lateralization * block ))
 
 # filtered EPN
 block_mod_epn_filter <- lmerTest::lmer(EPN ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
 summary(block_mod_epn_filter)
 performance::check_model(block_mod_epn_filter, panel = FALSE)
 # contrasts
-emmeans(block_mod_epn_filter, pairwise ~ lateralization | block)
-emmeans(block_mod_epn_filter, pairwise ~ block | lateralization)
+emmeans(block_mod_epn_filter, pairwise ~ lateralization | block)$contrasts
+emmeans(block_mod_epn_filter, pairwise ~ block | lateralization)$contrasts
+means_block_epn <- emmeans(block_mod_epn_filter, pairwise ~ lateralization | block)
+means_block_epn_trial <- emmeans(block_mod_epn_filter, pairwise ~ block | lateralization)
+contrast(means_block_epn, "poly")
+contrast(means_block_epn_trial, "poly")
 emmip(block_mod_epn_filter, block ~ lateralization) # plot
+# for interaction terms as well
+block_epn_filter_df <- as.data.frame(emmeans(block_mod_epn_filter, pairwise ~ lateralization * block ))
 
 #---- all possible block contrasts for average conditions
 mod_avg_lpp <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-emmeans(mod_avg_lpp, pairwise ~ block)
+emmeans(mod_avg_lpp, pairwise ~ block)$contrasts
 mod_avg_epn <- lmerTest::lmer(EPN ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-emmeans(mod_avg_epn, pairwise ~ block)
+emmeans(mod_avg_epn, pairwise ~ block)$contrasts
 
 # revised lpp
 per_erp_rev$block <- relevel(per_erp_rev$block, "Neu_Watch")
