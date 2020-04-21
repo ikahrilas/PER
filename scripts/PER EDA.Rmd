@@ -1028,38 +1028,97 @@ confint.rlmerMod(mod_front_neg_rob)
 
 ## EEG and arousal ratings
 
-Scatterplot between LPP and arousal ratings
+Scatterplot between EEG components and arousal ratings
 
 ```{r arousal ratings and LPP}
-ggplot(per_erp_int, aes(arousal, LPP)) +
+# LPP
+per_erp_filter_lat %>% 
+ggplot(., aes(arousal, LPP, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) +
-  ggtitle("Arousal ratings and LPP")
+  ggtitle("Arousal ratings and LPP") +
+  geom_smooth(method = "lm", se = FALSE)
+# EPN
+per_erp_filter_lat %>% 
+  ggplot(., aes(arousal, EPN, color = lateralization)) +
+  geom_jitter(width = 0.1, height = 0.1) +
+  ggtitle("Arousal ratings and EPN") +
+  geom_smooth(method = "lm", se = FALSE)
+# Centro-parietal LPP
+per_erp_rev %>% 
+  ggplot(., aes(arousal, LPP)) +
+  geom_jitter(width = 0.1, height = 0.1) +
+  ggtitle("Arousal ratings and LPP") +
+  geom_smooth(method = "lm", se = FALSE)
+# frontal
+per_erp_filter_lat %>% 
+  filter(lateralization %in% c("right", "left")) %>% 
+  ggplot(., aes(arousal, front_avr, color = lateralization)) +
+  geom_jitter(width = 0.1, height = 0.1) +
+  ggtitle("Arousal ratings and frontal component") +
+  geom_smooth(method = "lm", se = FALSE)
 ```
 
-There appears to be a positive linear relationship between the two. Let's test a linear model using MLM to account for the clustering between participants.
+There appears to be some positive relations. Let's test a linear model using MLM to account for the clustering between participants.
 
-```{r}
-mod_arousal <- lmerTest::lmer(LPP ~ arousal + (1|pid), data = per_erp_int)
-
+```{r eeg predicted by arousal}
+mod_arousal_lpp <- lmerTest::lmer(LPP ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_arousal)
+mod_arousal_lpp_rev <- lmerTest::lmer(LPP ~ arousal + (1|pid), data = per_erp_rev)
+summary(mod_arousal_rev)
+mod_arousal_epn <- lmerTest::lmer(EPN ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_arousal_epn)
 ```
 
-Results indicate a significant linear relationship between arousal and LPP.
-
-## LPP and valence ratings
+## EEG and valence ratings
 
 Scatterplot between LPP and valence ratings
 
 ```{r valence ratings and LPP, warning=FALSE, message=FALSE}
-ggplot(per_erp_int, aes(valence, LPP)) +
+# LPP
+per_erp_filter_lat %>% 
+ggplot(., aes(valence, LPP, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(se = FALSE) +
   ggtitle("Valence ratings and LPP")
+# EPN
+per_erp_filter_lat %>% 
+ggplot(., aes(valence, EPN, color = lateralization)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(se = FALSE) +
+  ggtitle("Valence ratings and EPN")
+# revised lpp
+per_erp_rev %>% 
+ggplot(., aes(valence, LPP)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(se = FALSE) +
+  ggtitle("Valence ratings and centro-parietal LPP")
+# frontal
+per_erp_filter_lat %>% 
+filter(lateralization %in% c("left", "right")) %>% 
+ggplot(., aes(valence, front_avr, color = lateralization)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(se = FALSE) +
+  ggtitle("Valence ratings and EPN")
 ```
 
 At first glance, there does not appear to be a relationship. However, it is hypothesized that more negatively- and positively-valenced images may positively correlate with LPP. Let's test this by fitting a polynomial regression line through the scatterplot.
 
 ```{r, message=FALSE, warning=FALSE}
-ggplot(per_erp_int, aes(valence, LPP)) +
+# LPP
+per_erp_filter_lat %>% 
+ggplot(., aes(valence, LPP, color = lateralization)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
+  ggtitle("Valence ratings and LPP")
+# EPN
+per_erp_filter_lat %>% 
+ggplot(., aes(valence, EPN, color = lateralization)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
+  ggtitle("Valence ratings and EPN")
+# centro-parietal LPP
+per_erp_rev %>% 
+ggplot(., aes(valence, LPP)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
   ggtitle("Valence ratings and LPP")
