@@ -294,7 +294,11 @@ eeg_by_pid <- per_erp %>%
   summarize(LPP_right = mean(LPP_right, na.rm = TRUE),
             LPP_left = mean(LPP_left, na.rm = TRUE),
             EPN_right = mean(EPN_right, na.rm = TRUE),
-            EPN_left = mean(EPN_left, na.rm = TRUE))
+            EPN_left = mean(EPN_left, na.rm = TRUE),
+            front_left_avr = mean(front_left_avr, na.rm = TRUE),
+            front_right_avr = mean(front_right_avr, na.rm = TRUE),
+            front_left_mast = mean(front_left_mast, na.rm = TRUE),
+            front_right_mast = mean(front_right_mast, na.rm = TRUE))
 
 hist_qq_fun <- function(trial, component) {
 (eeg_by_pid %>% 
@@ -309,7 +313,7 @@ eeg_by_pid %>%
 }
 
 blocks <- unique(as.character(eeg_by_pid$block))
-components <- names(eeg_by_pid)[3:6]
+components <- names(eeg_by_pid)[3:10]
 
 map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 ```
@@ -366,6 +370,10 @@ outlier_pids <- unique(c(eeg_by_pid %>%
                          eeg_by_pid %>% 
                            filter(block == "Neu_Watch", EPN_left > 15) %>% 
                            select(pid) %>% 
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Neg_Watch", front_right_avr < -4) %>% 
+                           select(pid) %>% 
                            pull()))
                   
 # inspect cases
@@ -379,7 +387,7 @@ eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right > 10 | eeg_by_pid_filter
 eeg_by_pid_filter$LPP_left[eeg_by_pid_filter$LPP_left > 12] <- NA
 eeg_by_pid_filter$EPN_right[eeg_by_pid_filter$EPN_right < -20] <- NA
 eeg_by_pid_filter$EPN_left[eeg_by_pid_filter$EPN_left > 15] <- NA
-
+eeg_by_pid_filter$front_right_avr[eeg_by_pid_filter$front_right_avr < -4] <- NA
 # same for rev group
 outlier_pid_rev <- eeg_by_pid_rev %>% 
   filter(block == "Neu_Watch", LPP > 10 | LPP < -8) %>% 
@@ -423,29 +431,50 @@ per_erp_filter$LPP_right[per_erp_filter$LPP_right > 10 | per_erp_filter$LPP_righ
 per_erp_filter$LPP_left[per_erp_filter$LPP_left > 12] <- NA
 per_erp_filter$EPN_right[per_erp_filter$EPN_right < -20] <- NA
 per_erp_filter$EPN_left[per_erp_filter$EPN_left > 15] <- NA
+per_erp_filter$front_right_avr[per_erp_filter$front_right_avr < -4] <- NA
 # for rev LPP as well
 per_erp_rev$LPP[per_erp_rev$LPP > 12 | per_erp_rev$LPP < -10] <- NA
 # average eeg components
 per_erp <- per_erp %>% 
   mutate(LPP_avg = (LPP_right + LPP_left) / 2,
-         EPN_avg = (EPN_right + EPN_left) / 2)
+         EPN_avg = (EPN_right + EPN_left) / 2,
+         front_avg_avr = (front_left_avr + front_right_avr) / 2,
+         front_avg_mast = (front_left_mast + front_right_mast) / 2)
 per_erp_filter <- per_erp_filter %>% 
   mutate(LPP_avg = (LPP_right + LPP_left) / 2,
-         EPN_avg = (EPN_right + EPN_left) / 2)
+         EPN_avg = (EPN_right + EPN_left) / 2,
+         front_avg_avr = (front_left_avr + front_right_avr) / 2,
+         front_avg_mast = (front_left_mast + front_right_mast) / 2)
 # create side variable for lateralization in both data sets
 tmp_LPP <- per_erp %>% 
-  select(-contains("EPN_")) %>% 
+  select(-contains(c("EPN_", "front_"))) %>% 
   pivot_longer(c(LPP_right, LPP_left, LPP_avg), names_to = "lateralization", values_to = "LPP") %>% 
   mutate(lateralization = str_remove(lateralization, "LPP_")) %>% 
   mutate(lateralization = as.factor(lateralization))
 tmp_EPN <- per_erp %>% 
-  select(-contains("LPP_")) %>% 
+  select(-contains(c("LPP_", "front_"))) %>% 
   pivot_longer(c(EPN_right, EPN_left, EPN_avg), names_to = "lateralization", values_to = "EPN") %>% 
   mutate(lateralization = str_remove(lateralization, "EPN_")) %>% 
   mutate(lateralization = as.factor(lateralization)) %>% 
   select(pid, block, EPN, lateralization)
-per_erp_lat <- full_join(tmp_LPP, tmp_EPN, by = (c("pid", "block", "lateralization"))) %>% 
-  select(pid, block, prop_trials, LPP, EPN, lateralization, everything())
+tmp_front_avr <- per_erp %>% 
+  select(-contains(c("LPP_", "EPN_"))) %>% 
+  pivot_longer(c(front_right_avr, front_left_avr, front_avg_avr), names_to = "lateralization", values_to = "front_avr") %>% 
+  mutate(lateralization = str_remove(lateralization, "front_")) %>% 
+  mutate(lateralization = str_remove(lateralization, "_avr")) %>% 
+  mutate(lateralization = as.factor(lateralization)) %>% 
+  select(pid, block, front_avr, lateralization)
+tmp_front_mast <- per_erp %>% 
+  select(-contains(c("LPP_", "EPN_"))) %>% 
+  pivot_longer(c(front_right_mast, front_left_mast, front_avg_mast), names_to = "lateralization", values_to = "front_mast") %>% 
+  mutate(lateralization = str_remove(lateralization, "front_")) %>% 
+  mutate(lateralization = str_remove(lateralization, "_mast")) %>% 
+  mutate(lateralization = as.factor(lateralization)) %>% 
+  select(pid, block, front_mast, lateralization)
+per_erp_lat <- full_join(tmp_LPP, tmp_EPN, by = c("pid", "block", "lateralization")) %>%
+  full_join(tmp_front_avr, by = c("pid", "block", "lateralization")) %>% 
+  full_join(tmp_front_mast, by = c("pid", "block", "lateralization")) %>% 
+  select(pid, block, prop_trials, LPP, EPN, front_avr, front_mast, lateralization, everything())
 # filtered dataset
 tmp_LPP_filter <- per_erp_filter %>% 
   select(-contains("EPN")) %>% 
@@ -458,8 +487,24 @@ tmp_EPN_filter <- per_erp_filter %>%
   mutate(lateralization = str_remove(lateralization, "EPN_")) %>% 
   mutate(lateralization = as.factor(lateralization)) %>% 
   select(pid, block, EPN, lateralization)
-per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = (c("pid", "block", "lateralization"))) %>% 
-  select(pid, block, prop_trials, LPP, EPN, lateralization, everything())
+tmp_front_avr_filter <- per_erp_filter %>% 
+  select(-contains(c("LPP_", "EPN_"))) %>% 
+  pivot_longer(c(front_right_avr, front_left_avr, front_avg_avr), names_to = "lateralization", values_to = "front_avr") %>% 
+  mutate(lateralization = str_remove(lateralization, "front_")) %>% 
+  mutate(lateralization = str_remove(lateralization, "_avr")) %>% 
+  mutate(lateralization = as.factor(lateralization)) %>% 
+  select(pid, block, front_avr, lateralization)
+tmp_front_mast_filter <- per_erp_filter %>% 
+  select(-contains(c("LPP_", "EPN_"))) %>% 
+  pivot_longer(c(front_right_mast, front_left_mast, front_avg_mast), names_to = "lateralization", values_to = "front_mast") %>% 
+  mutate(lateralization = str_remove(lateralization, "front_")) %>% 
+  mutate(lateralization = str_remove(lateralization, "_mast")) %>% 
+  mutate(lateralization = as.factor(lateralization)) %>% 
+  select(pid, block, front_mast, lateralization)
+per_erp_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = c("pid", "block", "lateralization")) %>%
+  full_join(tmp_front_avr_filter, by = c("pid", "block", "lateralization")) %>% 
+  full_join(tmp_front_mast_filter, by = c("pid", "block", "lateralization")) %>% 
+  select(pid, block, prop_trials, LPP, EPN, front_avr, front_mast, lateralization, everything())
 ```
 
 # Bivariate Relationships
