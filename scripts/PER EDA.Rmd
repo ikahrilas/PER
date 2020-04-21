@@ -386,11 +386,15 @@ eeg_by_pid %>%
 # make duplicate data frame with extreme values replaced with NA
 eeg_by_pid_filter <- eeg_by_pid
 
-eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right > 10 | eeg_by_pid_filter$LPP_right < -9] <- NA
+eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right > 10] <- NA
+eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right < -9] <- NA
 eeg_by_pid_filter$LPP_left[eeg_by_pid_filter$LPP_left > 12] <- NA
 eeg_by_pid_filter$EPN_right[eeg_by_pid_filter$EPN_right < -20] <- NA
 eeg_by_pid_filter$EPN_left[eeg_by_pid_filter$EPN_left > 15] <- NA
-eeg_by_pid_filter$front_right_avr[eeg_by_pid_filter$front_right_avr < -4 | eeg_by_pid_filter$front_right_avr > 4.1] <- NA
+eeg_by_pid_filter$front_left_avr[eeg_by_pid_filter$front_left_avr < -5] <- NA
+eeg_by_pid_filter$front_left_avr[eeg_by_pid_filter$front_left_avr > 4.5] <- NA
+eeg_by_pid_filter$front_right_avr[eeg_by_pid_filter$front_right_avr < -4] <- NA
+eeg_by_pid_filter$front_right_avr[eeg_by_pid_filter$front_right_avr > 4.1] <- NA
 eeg_by_pid_filter$front_right_mast[eeg_by_pid_filter$front_right_mast < -4.7] <- NA
 
 # same for rev group
@@ -432,11 +436,16 @@ Create second dataset with outliers omitted. Create average LPP and EPN variable
 ```{r manipulate the dataset to facilitate bivariate analyses}
 # construct a second data frame without the outlier datapoints
 per_erp_filter <- per_erp
-per_erp_filter$LPP_right[per_erp_filter$LPP_right > 10 | per_erp_filter$LPP_right < -9] <- NA
+per_erp_filter$LPP_right[per_erp_filter$LPP_right > 10] <- NA
+per_erp_filter$LPP_right[per_erp_filter$LPP_right < -9] <- NA
 per_erp_filter$LPP_left[per_erp_filter$LPP_left > 12] <- NA
 per_erp_filter$EPN_right[per_erp_filter$EPN_right < -20] <- NA
 per_erp_filter$EPN_left[per_erp_filter$EPN_left > 15] <- NA
+per_erp_filter$front_left_avr[per_erp_filter$front_left_avr < -5] <- NA
+per_erp_filter$front_left_avr[per_erp_filter$front_left_avr > 4.5] <- NA
 per_erp_filter$front_right_avr[per_erp_filter$front_right_avr < -4] <- NA
+per_erp_filter$front_right_avr[per_erp_filter$front_right_avr > 4.1] <- NA
+per_erp_filter$front_right_mast[per_erp_filter$front_right_mast < -4.7] <- NA
 # for rev LPP as well
 per_erp_rev$LPP[per_erp_rev$LPP > 12 | per_erp_rev$LPP < -10] <- NA
 # average eeg components
@@ -543,7 +552,17 @@ per_erp_lat %>%
   ggplot(., aes(block, front_avr, color = lateralization)) +
   geom_boxplot() +
   ggtitle("Avr frontal component box and whisker plots for each block")
+per_erp_lat_filter %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  ggplot(., aes(block, front_avr, color = lateralization)) +
+  geom_boxplot() +
+  ggtitle("Avr frontal component box and whisker plots for each block")
 per_erp_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  ggplot(., aes(block, front_mast, color = lateralization)) +
+  geom_boxplot() +
+  ggtitle("Mast ref frontal component box and whisker plots for each block")
+per_erp_lat_filter %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, front_mast, color = lateralization)) +
   geom_boxplot() +
