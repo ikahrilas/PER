@@ -180,13 +180,8 @@ eprime_int$pid <- as.character(eprime_int$pid) #convert pid column to character 
 per_dataset$pid <- as.character(per_dataset$pid)
 per_full <- full_join(eprime_int, per_dataset, by = "pid") #join data
 per_full$block <- droplevels(per_full$block)
-per_full$block <- recode(per_full$block, NEGDEC = "Neg_Dec",
-                       NEGINC = "Neg_Inc",
-                       NEGWAT = "Neg_Watch",
-                       NEUWAT = "Neu_Watch",
-                       POSDEC = "Pos_Dec",
-                       POSINC = "Pos_Inc",
-                       POSWAT = "Pos_Watch")
+levels(per_full$block) <- c("Neg_Dec", "Neg_Inc", "Neg_Watch", "Neu_Watch", "Pos_Dec", "Pos_Inc", "Pos_Watch")
+
 # write to file
 write_csv(per_full, here("data", "created_data", "per_measures.csv"))
 ```
