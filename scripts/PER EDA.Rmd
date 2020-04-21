@@ -717,6 +717,48 @@ r2beta(mod_one_epn)
 mod_one_epn_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
 summary(mod_one_epn_lat)
 report(mod_one_epn_lat)
+
+# frontal avr as outcome
+per_erp_lat$block <- relevel(per_erp_lat$block, "Neu_Watch")
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+null_front_avr <- lmerTest::lmer(front_avr ~ (1|pid), data = per_erp_lat) # need to indicate lateralization
+icc(null_front_avr)
+# 34.9% of the variance is accounted for by between participant effects
+# fit model one with front_avr
+mod_one_front_avr_left <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_lat %>% filter(lateralization == "left"))
+mod_one_front_avr_right <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_lat %>% filter(lateralization == "right"))
+check_model(mod_one_front_avr_left, panel = FALSE)
+check_model(mod_one_front_avr_right, panel = FALSE)
+summary(mod_one_front_avr_left)
+summary(mod_one_front_avr_right)
+# same with filtered dataset
+mod_one_front_avr_left_fil <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
+mod_one_front_avr_right_fil <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+check_model(mod_one_front_avr_left_fil, panel = FALSE)
+check_model(mod_one_front_avr_right_fil, panel = FALSE)
+summary(mod_one_front_avr_left)
+summary(mod_one_front_avr_right)
+
+# frontal mast as outcome
+null_front_mast_right <- lmerTest::lmer(front_mast ~ (1|pid), per_erp_lat %>% filter(lateralization == "right"))
+null_front_mast_left <- lmerTest::lmer(front_mast ~ (1|pid), per_erp_lat %>% filter(lateralization == "left"))
+icc(null_front_mast_right) # 30%
+icc(null_front_mast_left) # 24.4%
+# model one
+mod_one_front_mast_right <- lmerTest::lmer(front_mast ~ block + (1|pid), per_erp_lat %>% filter(lateralization == "right"))
+mod_one_front_mast_left <- lmerTest::lmer(front_mast ~ block + (1|pid), per_erp_lat %>% filter(lateralization == "left"))
+check_model(mod_one_front_mast_right, panel = FALSE)
+check_model(mod_one_front_mast_left, panel = FALSE)
+summary(mod_one_front_mast_right)
+summary(mod_one_front_mast_left)
+# model one with filtered dataset
+mod_one_front_mast_right_fil <- lmerTest::lmer(front_mast ~ block + (1|pid), per_erp_filter_lat %>% filter(lateralization == "right"))
+mod_one_front_mast_left_fil <- lmerTest::lmer(front_mast ~ block + (1|pid), per_erp_filter_lat %>% filter(lateralization == "left"))
+check_model(mod_one_front_mast_right_fil, panel = FALSE)
+check_model(mod_one_front_mast_left_fil, panel = FALSE)
+summary(mod_one_front_mast_right_fil)
+summary(mod_one_front_mast_left_fil)
+
 # revised lpp as outcome
 null_lpp_rev <- lmerTest::lmer(LPP ~ (1|pid), data = per_erp_rev)
 icc(null_lpp_rev)
@@ -764,7 +806,6 @@ mod_one_pos_epn_unf_rob <- rlmer(EPN ~ block+ (1|pid), data = per_erp_lat %>% fi
 plot(mod_one_pos_epn_unf_rob)
 confint.rlmerMod(mod_one_pos_epn_unf_rob)
 
-
 ## test lateralization interaction with unfiltered data set
 mod_one_pos_epn_unf_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat)
 summary(mod_one_pos_epn_unf_lat)
@@ -783,6 +824,23 @@ confint.rlmerMod(mod_one_neg_lpp_rev_rob)
 per_erp_rev$block <- relevel(per_erp_rev$block, "Pos_Watch")
 mod_one_pos_lpp_rev <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_rev)
 summary(mod_one_pos_lpp_rev)
+
+# front avr
+## relevel block variable to test positive regulation conditions
+per_erp_lat$block <- relevel(per_erp_lat$block, "Pos_Watch")
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_one_pos_front_right_avr <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_lat %>% filter(lateralization == "right"))
+summary(mod_one_pos_front_right_avr)
+## test three-way interaction between left and right
+mod_one_pos_front_avr <- lmerTest::lmer(front_avr ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat %>% filter(lateralization %in% c("right", "left")))
+summary(mod_one_pos_front_avr)
+
+## filtered dataset
+mod_one_pos_front_right_avr_fil <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+summary(mod_one_pos_front_right_avr_fil)
+## test three-way interaction between left and right
+mod_one_pos_front_avr_fil <- lmerTest::lmer(front_avr ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right", "left")))
+summary(mod_one_pos_front_avr_fil)
 ```
 
 ## Aim Two: LPP and Positive Affectivity
