@@ -841,6 +841,45 @@ summary(mod_one_pos_front_right_avr_fil)
 ## test three-way interaction between left and right
 mod_one_pos_front_avr_fil <- lmerTest::lmer(front_avr ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right", "left")))
 summary(mod_one_pos_front_avr_fil)
+
+## relevel block variable to test negative regulation conditions
+per_erp_lat$block <- relevel(per_erp_lat$block, "Neg_Watch")
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_one_neg_front_left_avr <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_lat %>% filter(lateralization == "left"))
+summary(mod_one_neg_front_left_avr)
+## test three-way interacion between left and right
+mod_one_neg_front_avr <- lmerTest::lmer(front_avr ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat %>% filter(lateralization %in% c("right", "left")))
+summary(mod_one_neg_front_avr_fil)
+## filtered data
+mod_one_neg_front_left_avr <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
+summary(mod_one_neg_front_left_avr)
+## test three-way interaction between left and right
+mod_one_neg_front_avr_fil <- lmerTest::lmer(front_avr ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right", "left")))
+summary(mod_one_neg_front_avr_fil)
+
+# front_mast
+## relevel block variable to test positive regulation conditions
+per_erp_lat$block <- relevel(per_erp_lat$block, "Pos_Watch")
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+## mod one front mast positive
+mod_one_front_pos_mast_right <- lmerTest::lmer(front_mast ~ block + (1|pid), data = per_erp_lat %>% filter(lateralization == "right"))
+summary(mod_one_front_pos_mast_right)
+## test three-way interaction between left and right
+mod_one_pos_front_mast <- lmerTest::lmer(front_mast ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat %>% filter(lateralization %in% c("right", "left")))
+summary(mod_one_neg_front_avr_fil)
+## filtered dataset
+mod_one_front_pos_mast_right_fil <- lmerTest::lmer(front_mast ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+summary(mod_one_front_pos_mast_right_fil)
+
+## relevel block variable to test negative regulation conditions
+per_erp_lat$block <- relevel(per_erp_lat$block, "Neg_Watch")
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+## mod front mast negative
+mod_front_neg_mast_left <- lmerTest::lmer(front_mast ~ block + (1|pid), data = per_erp_lat %>% filter(lateralization == "left"))
+summary(mod_front_neg_mast_left)
+## with filtered dataset
+mod_front_neg_mast_left_fil <- lmerTest::lmer(front_mast ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
+summary(mod_front_neg_mast_left_fil)
 ```
 
 ## Aim Two: LPP and Positive Affectivity
@@ -894,6 +933,10 @@ check_model(mod_two_lpp_rev, panel = FALSE)
 summary(mod_two_lpp_rev)
 r2beta(mod_two_lpp_rev)
 
+# check right frontal component
+per_erp_lat$block <- relevel(per_erp_lat$block, "Neu_Watch")
+right_pos_mod <- lmerTest::lmer(front_avr ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_lat %>% filter(lateralization == "right"))
+summary(right_pos_mod)
 
 #----- old code, might be useful down the line.
 # pos_watch_contrast <- per_erp_int %>% 
@@ -947,6 +990,20 @@ per_erp_rev$block <-  relevel(per_erp_rev$block, "Pos_Watch")
 mod_3_lpp_rev <- lmerTest::lmer(LPP ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_rev)
 check_model(mod_3_lpp_rev, panel = FALSE)
 summary(mod_3_lpp_rev)
+
+# frontal component
+per_erp_lat$block <-  relevel(per_erp_lat$block, "Pos_Watch")
+per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_3_front <- lmerTest::lmer(front_avr ~ block * scale(savoring, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+check_model(mod_3_front, panel = FALSE)
+summary(mod_3_front)
+
+# test neg affectivity as moderator betwee negative regulation blocks
+per_erp_lat$block <-  relevel(per_erp_lat$block, "Neg_Watch")
+per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_front_neg_affect <- lmerTest::lmer(front_avr ~ block * scale(neg_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
+check_model(mod_front_neg_affect, panel = FALSE)
+summary(mod_front_neg_affect)
 
 #---- old code
 # pos_inc_contrast <- per_erp_int %>% 
