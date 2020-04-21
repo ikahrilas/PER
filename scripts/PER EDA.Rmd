@@ -37,8 +37,8 @@ front_left <- c("EXG2", "A3", "A9", "A10")
 front_right <- c("EXG1", "B2", "B7", "B8")
 # select variabes from questionnaire data set for analyses
 measures_int <- per_questionnaires %>% 
-  select(pid:valence, sex, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
-         anticipating:masq_aa, tmms_repair, depression)
+  select(pid:valence, age, sex, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
+         anticipating:masq_aa, tmms_repair:depression)
 
 LPP_right <- erp_mast_wide %>%
   select(all_of(lpp_elec_right), pid:prop_trials) %>% 
