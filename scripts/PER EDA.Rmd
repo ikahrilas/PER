@@ -515,7 +515,7 @@ tmp_front_mast_filter <- per_erp_filter %>%
   mutate(lateralization = str_remove(lateralization, "_mast")) %>% 
   mutate(lateralization = as.factor(lateralization)) %>% 
   select(pid, block, front_mast, lateralization)
-per_erp_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = c("pid", "block", "lateralization")) %>%
+per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = c("pid", "block", "lateralization")) %>%
   full_join(tmp_front_avr_filter, by = c("pid", "block", "lateralization")) %>% 
   full_join(tmp_front_mast_filter, by = c("pid", "block", "lateralization")) %>% 
   select(pid, block, prop_trials, LPP, EPN, front_avr, front_mast, lateralization, everything())
@@ -552,21 +552,21 @@ per_erp_lat %>%
   ggplot(., aes(block, front_avr, color = lateralization)) +
   geom_boxplot() +
   ggtitle("Avr frontal component box and whisker plots for each block")
-per_erp_lat_filter %>% 
+per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, front_avr, color = lateralization)) +
   geom_boxplot() +
-  ggtitle("Avr frontal component box and whisker plots for each block")
+  ggtitle("Avr frontal component box and whisker plots for each block/nwith filtered dataset")
 per_erp_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, front_mast, color = lateralization)) +
   geom_boxplot() +
   ggtitle("Mast ref frontal component box and whisker plots for each block")
-per_erp_lat_filter %>% 
+per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, front_mast, color = lateralization)) +
   geom_boxplot() +
-  ggtitle("Mast ref frontal component box and whisker plots for each block")
+  ggtitle("Mast ref frontal component box and whisker plots for each block/nwith filtered dataset")
 per_erp_rev %>%
   ggplot(., aes(block, LPP)) +
   geom_boxplot() +
