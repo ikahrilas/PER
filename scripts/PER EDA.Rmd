@@ -994,7 +994,7 @@ summary(mod_3_lpp_rev)
 # frontal component
 per_erp_lat$block <-  relevel(per_erp_lat$block, "Pos_Watch")
 per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Pos_Watch")
-mod_3_front <- lmerTest::lmer(front_avr ~ block * scale(savoring, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+mod_3_front <- lmerTest::lmer(front_avr ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
 check_model(mod_3_front, panel = FALSE)
 summary(mod_3_front)
 
@@ -1004,6 +1004,8 @@ per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Neg_Watch")
 mod_front_neg_affect <- lmerTest::lmer(front_avr ~ block * scale(neg_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
 check_model(mod_front_neg_affect, panel = FALSE)
 summary(mod_front_neg_affect)
+mod_front_neg_rob <- rlmer(front_avr ~ block * scale(neg_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_lat %>% filter(lateralization == "left"))
+confint.rlmerMod(mod_front_neg_rob)
 
 #---- old code
 # pos_inc_contrast <- per_erp_int %>% 
@@ -1024,13 +1026,7 @@ summary(mod_front_neg_affect)
 #   ggtitle("Momentary savoring and contrast between \nPositive Watch and Positive Increase")
 ```
 
-Again, there does not appear to be a relationship between the two variables. Let's derive Pearson Product Moment correlation coefficient between the contrast and savoring the moment to confirm.
-
-```{r}
-cor.test(pos_inc_contrast$contrast, pos_inc_contrast$savoring_moment) %>% pander()
-```
-
-## LPP and arousal ratings
+## EEG and arousal ratings
 
 Scatterplot between LPP and arousal ratings
 
