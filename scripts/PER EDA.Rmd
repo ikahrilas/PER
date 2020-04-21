@@ -629,6 +629,19 @@ mod_one_pos_epn_unf_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|late
 summary(mod_one_pos_epn_unf_lat)
 
 # now with the revised LPP selection
+## relevel block variable to test negative regulation conditions
+per_erp_rev$block <- relevel(per_erp_rev$block, "Neg_Watch")
+mod_one_neg_lpp_rev <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_rev)
+check_model(mod_one_neg_lpp_rev, panel = FALSE)
+summary(mod_one_neg_lpp_rev)
+## try with robust model
+mod_one_neg_lpp_rev_rob <- rlmer(LPP ~ block + (1|pid), data = per_erp_rev)
+summary(mod_one_neg_lpp_rev_rob)
+confint.rlmerMod(mod_one_neg_lpp_rev_rob)
+## relevel block variable to test positive regulation conditions
+per_erp_rev$block <- relevel(per_erp_rev$block, "Pos_Watch")
+mod_one_pos_lpp_rev <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_rev)
+summary(mod_one_pos_lpp_rev)
 ```
 
 
