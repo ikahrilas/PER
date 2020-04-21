@@ -497,6 +497,11 @@ contrast(means_block_epn, "poly")
 emmip(block_mod_epn, block ~ lateralization) # plot
 #for interaction terms as well
 block_epn_df <- as.data.frame(emmeans(block_mod_epn, pairwise ~ lateralization * block ))
+# unfiltered epn just average
+block_mod_epn_avg_unf <- lmerTest::lmer(EPN ~ block+ (1|pid), data = per_erp_lat %>% filter(lateralization == "avg"))
+summary(block_mod_epn_avg_unf)
+emmeans(block_mod_epn_avg_unf, pairwise ~ block)$contrasts
+
 
 # filtered EPN
 block_mod_epn_filter <- lmerTest::lmer(EPN ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
@@ -568,6 +573,55 @@ check_model(mod_one_lpp_rev)
 summary(mod_one_lpp_rev)
 ```
 
+## Aim 1B: Regulation blocks
+```{r regulation blocks}
+# LPP
+## relevel block variable and inspect negative regulation blocks
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch") 
+## fit model
+mod_one_lpp_neg <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+check_model(mod_one_neg, panel = FALSE)
+summary(mod_one_lpp_neg)
+## relevel block variable and inspect positive regulation blocks
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_one_lpp_pos <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_one_lpp_pos)
+
+# EPN
+## relevel block variable and inspect negative regulation blocks
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+## fit model
+mod_one_epn_neg <- lmerTest::lmer(EPN ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_one_epn_neg)
+
+## relevel block variable and inspect positive regulation blocks
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_one_epn_pos <- lmerTest::lmer(EPN ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_one_pos)
+## see if there's a three-way interaction with lateralization
+mod_one_pos_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
+summary(mod_one_pos_lat)
+## with unfiltered dataset
+per_erp_lat$block <- relevel(per_erp_lat$block, "Pos_Watch")
+mod_one_pos_epn_unf <- lmerTest::lmer(EPN ~ block+ (1|pid), data = per_erp_lat %>% filter(lateralization == "avg"))
+summary(mod_one_pos_epn_unf)
+check_model(mod_one_pos_epn_unf)
+## unfiltered dataset with robust methods
+mod_one_pos_epn_unf_rob <- rlmer(EPN ~ block+ (1|pid), data = per_erp_lat %>% filter(lateralization == "avg"))
+plot(mod_one_pos_epn_unf_rob)
+
+
+## test lateralization interaction with unfiltered data set
+mod_one_pos_epn_unf_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat)
+summary(mod_one_pos_epn_unf_lat)
+
+
+summary(rlmer(EPN ~ block+ (1|pid), data = per_erp_lat %>% filter(lateralization == "avg"))
+
+# now with the revised LPP selection
+```
+
+
 ## Aim Two: LPP and Positive Affectivity
 
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
@@ -597,12 +651,24 @@ confint.rlmerMod(mod_two_lpp_rob)
 mod_two_epn <- lmerTest::lmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 check_model(mod_two_epn, panel = FALSE)
 summary(mod_two_epn)
-rlmer()
+
+# check three-way interaction with lateralization as well
+mod_two_epn_lat <- lmerTest::lmer(EPN ~ block * lateralization * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
+check_model(mod_two_epn_lat, panel = FALSE)
+summary(mod_two_epn_lat)
+# robust model
+mod_two_epn_lat_rob <- rlmer(EPN ~ block * lateralization * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
+plot(modmod_two_epn_lat_rob)
 
 # try robust model
 mod_two_epn_rob <- rlmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_two_epn_rob)
 confint.rlmerMod(mod_two_epn_rob)
+
+# revised LPP selection
+mod_two_lpp_rev <- lmerTest::lmer(LPP ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_rev)
+
+
 
 #----- old code, might be useful down the line.
 # pos_watch_contrast <- per_erp_int %>% 
