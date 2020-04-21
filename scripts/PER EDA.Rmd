@@ -644,12 +644,11 @@ mod_one_pos_lpp_rev <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_rev)
 summary(mod_one_pos_lpp_rev)
 ```
 
-
 ## Aim Two: LPP and Positive Affectivity
 
 Derive contrasts between neutral watch and positive watch conditions and observe relationship between this contrast and positive affectivity, which is in line with the study hypothesis that the LPP contrast between the neutral watch and positive watch conditions will be moderated by positive affectivity
 
-```{r pos affectivity contrasts}
+```{r pos affectivity contrasts, message=FALSE}
 # function for deriving Wald confidence intervals for robust models
 confint.rlmerMod <- function(object,parm,level=0.95) {
   beta <- fixef(object)
@@ -661,7 +660,9 @@ confint.rlmerMod <- function(object,parm,level=0.95) {
                                         digits=3)
   return(ctab[parm,])
 }
-
+# relevel block factor
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+# fit model
 mod_two_lpp <- lmerTest::lmer(LPP ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 # check assumptions
 check_model(mod_two_lpp, panel = FALSE)
@@ -674,6 +675,10 @@ confint.rlmerMod(mod_two_lpp_rob)
 mod_two_epn <- lmerTest::lmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 check_model(mod_two_epn, panel = FALSE)
 summary(mod_two_epn)
+# try robust model
+mod_two_epn_rob <- rlmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_two_epn_rob)
+confint.rlmerMod(mod_two_epn_rob)
 
 # check three-way interaction with lateralization as well
 mod_two_epn_lat <- lmerTest::lmer(EPN ~ block * lateralization * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
@@ -683,14 +688,12 @@ summary(mod_two_epn_lat)
 mod_two_epn_lat_rob <- rlmer(EPN ~ block * lateralization * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
 plot(modmod_two_epn_lat_rob)
 
-# try robust model
-mod_two_epn_rob <- rlmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-summary(mod_two_epn_rob)
-confint.rlmerMod(mod_two_epn_rob)
-
 # revised LPP selection
+per_erp_rev$block <- relevel(per_erp_rev$block, "Neu_Watch")
 mod_two_lpp_rev <- lmerTest::lmer(LPP ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_rev)
-
+check_model(mod_two_lpp_rev, panel = FALSE)
+summary(mod_two_lpp_rev)
+r2beta(mod_two_lpp_rev)
 
 
 #----- old code, might be useful down the line.
@@ -722,15 +725,12 @@ Derive contrasts between positive watch and positive increase conditions and obs
 # relevel block variable
 per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Pos_Watch")
 per_erp_filter_lat$lateralization <- relevel(per_erp_filter_lat$lateralization, "right")
-# run model with just block variable to determine difference bewteen positive watch and positive increase
-mod_pos <- lmerTest::lmer(EPN ~ block * lateralization + (1|pid), data = per_erp_filter_lat)
-summary(mod_pos)
 # model 3
 mod_3_lpp <- lmerTest::lmer(LPP ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 check_model(mod_3_lpp, panel = FALSE)
 summary(mod_3_lpp)
 # check robust model
-mod_3_lpp_rob <- rlmer(LPP ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
+mod_3_lpp_rob <- rlmer(LPP ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_3_lpp_rob)
 confint.rlmerMod(mod_3_lpp_rob)
 
@@ -743,6 +743,11 @@ summary(mod_3_epn)
 mod_3_epn_rob <- rlmer(EPN ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_3_epn_rob)
 
+# revised lpp selection
+per_erp_rev$block <-  relevel(per_erp_rev$block, "Pos_Watch")
+mod_3_lpp_rev <- lmerTest::lmer(LPP ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_rev)
+check_model(mod_3_lpp_rev, panel = FALSE)
+summary(mod_3_lpp_rev)
 
 #---- old code
 # pos_inc_contrast <- per_erp_int %>% 
