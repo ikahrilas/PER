@@ -534,6 +534,18 @@ emmeans(block_mod_lpp_rev, pairwise ~ block)
 ## Aim One: Passive Blocks
 
 ```{r hypothesis one, message=FALSE}
+# function for deriving Wald confidence intervals for robust models
+confint.rlmerMod <- function(object,parm,level=0.95) {
+  beta <- fixef(object)
+  if (missing(parm)) parm <- names(beta)
+  se <- sqrt(diag(vcov(object)))
+  z <- qnorm((1+level)/2)
+  ctab <- cbind(beta-z*se,beta+z*se)
+  colnames(ctab) <- stats:::format.perc(c((1-level)/2,(1+level)/2),
+                                        digits=3)
+  return(ctab[parm,])
+}
+
 # fit null model for LPP
 null_lpp_model <- lmer(LPP ~ (1|pid), data = filter(per_erp_filter_lat, lateralization == "avg"))
 # check intraclass correlation
@@ -597,7 +609,7 @@ summary(mod_one_epn_neg)
 ## relevel block variable and inspect positive regulation blocks
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
 mod_one_epn_pos <- lmerTest::lmer(EPN ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-summary(mod_one_pos)
+summary(mod_one_epn_pos)
 ## see if there's a three-way interaction with lateralization
 mod_one_pos_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
 summary(mod_one_pos_lat)
@@ -609,14 +621,12 @@ check_model(mod_one_pos_epn_unf)
 ## unfiltered dataset with robust methods
 mod_one_pos_epn_unf_rob <- rlmer(EPN ~ block+ (1|pid), data = per_erp_lat %>% filter(lateralization == "avg"))
 plot(mod_one_pos_epn_unf_rob)
+confint.rlmerMod(mod_one_pos_epn_unf_rob)
 
 
 ## test lateralization interaction with unfiltered data set
 mod_one_pos_epn_unf_lat <- lmerTest::lmer(EPN ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_lat)
 summary(mod_one_pos_epn_unf_lat)
-
-
-summary(rlmer(EPN ~ block+ (1|pid), data = per_erp_lat %>% filter(lateralization == "avg"))
 
 # now with the revised LPP selection
 ```
