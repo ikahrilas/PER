@@ -33,8 +33,8 @@ lpp_elec_rev <- c("B27", "B22", "B28", "B29", "A30", "A25")
 lpp_elec_left <- c("A27", "A26", "A30", "A29")
 epn_elec_right <- c("B25", "B26", "B24")
 epn_elec_left <- c("A28", "A27", "A29")
-front_right <- c("EXG2", "A3", "A9", "A10")
-front_left <- c("EXG1", "B2", "B7", "B8")
+front_left <- c("EXG2", "A3", "A9", "A10")
+front_right <- c("EXG1", "B2", "B7", "B8")
 # select variabes from questionnaire data set for analyses
 measures_int <- per_questionnaires %>% 
   select(pid:valence, sex, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
@@ -356,11 +356,12 @@ outlier_pids <- unique(c(eeg_by_pid %>%
                            select(pid) %>% 
                            pull(),
                          eeg_by_pid %>% 
-                           filter(block == "Neg_Dec", EPN_right < -20) %>% 
+                           filter(block == "Neg_Dec", EPN_right < -20, front_right_avr < -5.0,
+                                  front_right_mast < -4.7) %>% 
                            select(pid) %>% 
                            pull(),
                          eeg_by_pid %>% 
-                           filter(block == "Pos_Dec", EPN_right < -20) %>% 
+                           filter(block == "Pos_Dec", EPN_right < -20, front_right_avr > 4.1) %>% 
                            select(pid) %>% 
                            pull(),
                          eeg_by_pid %>% 
@@ -374,7 +375,9 @@ outlier_pids <- unique(c(eeg_by_pid %>%
                          eeg_by_pid %>% 
                            filter(block == "Neg_Watch", front_right_avr < -4) %>% 
                            select(pid) %>% 
-                           pull()))
+                           pull(),
+                         eeg_by_pid %>% 
+                           filter(block == "Neg_Inc", front_right_avr < -4)))
                   
 # inspect cases
 eeg_by_pid %>% 
@@ -387,7 +390,9 @@ eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right > 10 | eeg_by_pid_filter
 eeg_by_pid_filter$LPP_left[eeg_by_pid_filter$LPP_left > 12] <- NA
 eeg_by_pid_filter$EPN_right[eeg_by_pid_filter$EPN_right < -20] <- NA
 eeg_by_pid_filter$EPN_left[eeg_by_pid_filter$EPN_left > 15] <- NA
-eeg_by_pid_filter$front_right_avr[eeg_by_pid_filter$front_right_avr < -4] <- NA
+eeg_by_pid_filter$front_right_avr[eeg_by_pid_filter$front_right_avr < -4 | eeg_by_pid_filter$front_right_avr > 4.1] <- NA
+eeg_by_pid_filter$front_right_mast[eeg_by_pid_filter$front_right_mast < -4.7] <- NA
+
 # same for rev group
 outlier_pid_rev <- eeg_by_pid_rev %>% 
   filter(block == "Neu_Watch", LPP > 10 | LPP < -8) %>% 
@@ -533,6 +538,16 @@ per_erp_filter_lat %>%
   ggplot(., aes(block, EPN, color = lateralization)) +
   geom_boxplot() +
   ggtitle("EPN box and whisker plots for each block\nwith filtered dataset")
+per_erp_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  ggplot(., aes(block, front_avr, color = lateralization)) +
+  geom_boxplot() +
+  ggtitle("Avr frontal component box and whisker plots for each block")
+per_erp_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  ggplot(., aes(block, front_mast, color = lateralization)) +
+  geom_boxplot() +
+  ggtitle("Mast ref frontal component box and whisker plots for each block")
 per_erp_rev %>%
   ggplot(., aes(block, LPP)) +
   geom_boxplot() +
