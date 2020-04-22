@@ -1127,9 +1127,13 @@ ggplot(., aes(valence, LPP)) +
 Now, conduct a polynomial regression using MLM.
 
 ```{r}
-mod_valence <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_int)
-
-summary(mod_valence)
+mod_valence_lpp <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_valence_lpp)
+check_model(mod_valence_lpp, panel = FALSE)
+mod_valence_epn <- lmerTest::lmer(EPN ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_valence_epn)
+mod_valence_lpp_rev <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_rev)
+summary(mod_valence_lpp_rev)
 ```
 
 Results indicate that there is a curvilinear relationship between LPP and arousal.
@@ -1139,17 +1143,42 @@ Results indicate that there is a curvilinear relationship between LPP and arousa
 Scatterplot between LPP and dificulty ratings.
 
 ```{r difficulty ratings and LPP, warning=FALSE, message=FALSE}
-ggplot(per_erp_int, aes(difficulty, LPP)) +
+per_erp_filter_lat %>%
+ggplot(., aes(difficulty, LPP, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(method = "lm", se = FALSE) +
   ggtitle("Difficulty ratings and LPP")
+per_erp_filter_lat %>%
+ggplot(., aes(difficulty, EPN, color = lateralization)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Difficulty ratings and EPN")
+per_erp_rev %>%
+ggplot(., aes(difficulty, LPP)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Difficulty ratings and centroparietal LPP")
+per_erp_filter_lat %>% 
+  filter(lateralization %in% c("left", "right")) %>% 
+  ggplot(., aes(difficulty, front_avr, color = lateralization)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Difficulty ratings and frontal component")
 ```
 
 There may be a slight linear relationship, though it is weak. Let's try fitting a linear model to test this.
 
 ```{r, warning=FALSE, message=FALSE}
-mod_difficulty <- lmerTest::lmer(LPP ~ difficulty + (1|pid), data = per_erp_int)
-
-summary(mod_difficulty)
+mod_difficulty_lpp <- lmerTest::lmer(LPP ~ difficulty + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+check_model(mod_difficulty_lpp, panel = FALSE)
+summary(mod_difficulty_lpp)
+mod_difficulty_epn <- lmerTest::lmer(EPN ~ difficulty + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_difficulty_epn)
+mod_difficulty_lpp_rev <- lmerTest::lmer(LPP ~ difficulty + (1|pid), data = per_erp_rev)
+summary(mod_difficulty_lpp_rev)
+mod_difficulty_front <- lmerTest::lmer(front_avr ~ difficulty * block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left")))
+summary(mod_difficulty_front)
+# there is an interaction with Positive increase and difficulty for the left frontal component.
 ```
 
 There does appear to be a positive relationship between the difficulty of the task and LPP.
@@ -1157,43 +1186,49 @@ There does appear to be a positive relationship between the difficulty of the ta
 ## Valence and difficulty ratings
 
 ```{r, message=FALSE, warning=FALSE}
-ggplot(per_erp_int, aes(valence, difficulty)) +
+per_erp_filter_lat %>% 
+  filter(lateralization == "avg") %>% 
+ggplot(., aes(valence, difficulty)) +
   geom_jitter(height = 0.2, width = 0.2) + 
+  geom_smooth() +
   ggtitle("Valence and difficulty ratings")
 ```
 
 There doesn't appear to be a relationship between the two, but we can test this.
 
 ```{r, message=FALSE, warning=FALSE}
-mod_diff_val <- lmerTest::lmer(difficulty ~ valence + (1|pid), data = per_erp_int)
-
+mod_diff_val <- lmerTest::lmer(difficulty ~ valence + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_diff_val)
-
-library(lme4)
+mod_diff_val_poly <- lmerTest::lmer(difficulty ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_diff_val_poly) # the polynomial term is non-significant
 ```
 
 I stand corrected. There is a relationship. Let's check the effect size:
 
 ```{r}
-effectsize::standardize_parameters(mod_diff_val) %>% pander()
+r2beta(mod_diff_val)
 ```
 
 ## Valence and arousal
 
 ```{r, message=FALSE, warning=FALSE}
-ggplot(per_erp_int, aes(valence, arousal)) +
+per_erp_filter_lat %>% 
+  filter(lateralization == "avg") %>% 
+ggplot(., aes(valence, arousal)) +
   geom_jitter(width = 0.3, height = 0.3) + 
-  geom_smooth(method = "lm") +
-  stat_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red") +
+  geom_smooth() +
+#  geom_smooth(method = "lm") +
+ # stat_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red") +
   ggtitle("Valence and arousal ratings")
 ```
 
 It looks like there is a strong curvilinear relationship between the two. 
 
 ```{r, message=FALSE, warning=FALSE}
-mod_val_arousal <- lmerTest::lmer(arousal ~ poly(valence, 2) + (1|pid), data = per_erp_int)
-
+mod_val_arousal <- lmerTest::lmer(arousal ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_val_arousal)
+report(mod_val_arousal)
+r2beta(mod_val_arousal)
 ```
 
 The MLM analysis confirms this relationship.
@@ -1201,15 +1236,18 @@ The MLM analysis confirms this relationship.
 ## Arousal and difficulty ratings
 
 ```{r, message=FALSE, warning=FALSE}
-ggplot(per_erp_int, aes(arousal, difficulty)) +
+per_erp_filter_lat %>% 
+  filter(lateralization == "avg") %>% 
+ggplot(., aes(arousal, difficulty)) +
   geom_jitter(height = 0.3, width = 0.3) + 
+  stat_smooth() +
   ggtitle("Arousal and difficulty ratings")
 ```
 
 There is perhaps a curvilinear relationship. Let's model a locally weighted (green) and polynomial regression (red) line on the plot to see what the relationship is, and how well the polynomial regression line fits compared to the locally weighted one.
 
 ```{r, message=FALSE, warning=FALSE}
-ggplot(per_erp_int, aes(arousal, difficulty)) +
+ggplot(filter(per_erp_filter_lat, lateralization == "avg"), aes(arousal, difficulty)) +
   geom_jitter(height = 0.3, width = 0.3) + 
   geom_smooth(color = "green", alpha = 0.2) +
   stat_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red", alpha = 0.2) +
@@ -1219,9 +1257,9 @@ ggplot(per_erp_int, aes(arousal, difficulty)) +
 It looks like the curvilnear relationship may be a good fit. Let's test it with an MLM analysis
 
 ```{r, warning=FALSE, message=FALSE}
-mod_diff_arousal <- lmerTest::lmer(difficulty ~ poly(arousal, 2) + (1|pid), data = per_erp_int)
-
+mod_diff_arousal <- lmerTest::lmer(difficulty ~ poly(arousal, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_diff_arousal)
+r2beta(mod_diff_arousal)
 ```
 
 Indeed, the results indicated that the relationship is curvilinear.
