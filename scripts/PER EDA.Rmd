@@ -1263,3 +1263,26 @@ r2beta(mod_diff_arousal)
 ```
 
 Indeed, the results indicated that the relationship is curvilinear.
+
+Exploration of traits and average EEG components collapsed across all groups.
+```{r trait and average eeg exploration}
+stm_lpp <- lmerTest::lmer(LPP ~ savoring_moment * lateralization + (1|pid), data = per_erp_filter_lat)
+summary(stm_lpp)
+pa_lpp <- lmerTest::lmer(LPP ~ pos_affectivity * lateralization + (1|pid), data = per_erp_filter_lat)
+summary(pa_lpp)
+stm_epn <- lmerTest::lmer(EPN ~ savoring_moment * lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+summary(stm_epn)
+pa_epn <- lmerTest::lmer(EPN ~ pos_affectivity * lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+summary(pa_epn)
+# revised lpp
+stm_lpp_rev <- lmerTest::lmer(LPP ~ savoring_moment + (1|pid), data = per_erp_rev)
+summary(stm_lpp_rev)
+pa_lpp_rev <- lmerTest::lmer(LPP ~ pos_affectivity + (1|pid), data = per_erp_rev)
+summary(pa_lpp_rev)
+# right front
+stm_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+summary(stm_front)
+pa_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+summary(pa_front)
+```
+
