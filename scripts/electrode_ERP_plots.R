@@ -82,7 +82,40 @@ avr_scatter_fun_passive <- function(elec) {
     ggtitle(elec) +
     theme_classic()
 }
-
+# ERP function for right frontal component
+front_r_scatter_fun_passive <- function(elec) {
+  avr_long %>% 
+    filter(electrode == elec, block %in% c("Pos_Watch", "Pos_Inc")) %>% 
+    mutate(ms = round(ms, digits = -0.8)) %>% # downsample to speed up plotting
+    group_by(block, ms) %>% 
+    summarize(mv = mean(mv, na.rm = TRUE)) %>%   
+    ggplot(., aes(ms, mv, color = block)) +
+    geom_line(size = 1) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = c(1000, 2000), linetype = "solid", size = 1.05) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    xlim(800, 2200) +
+    labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
+    ggtitle(elec) +
+    theme_classic()
+}
+# ERP function for right frontal component
+front_l_scatter_fun_passive <- function(elec) {
+  avr_long %>% 
+    filter(electrode == elec, block %in% c("Neg_Watch", "Neg_Dec")) %>% 
+    mutate(ms = round(ms, digits = -0.8)) %>% # downsample to speed up plotting
+    group_by(block, ms) %>% 
+    summarize(mv = mean(mv, na.rm = TRUE)) %>%   
+    ggplot(., aes(ms, mv, color = block)) +
+    geom_line(size = 1) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = c(1000, 2000), linetype = "solid", size = 1.05) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    xlim(800, 2200) +
+    labs(x = "Time (ms)",y = expression(paste("Amplitude (",mu,"V)"))) +
+    ggtitle(elec) +
+    theme_classic()
+}
 # map scatterplot functions over each electrode to obtain electrode-by-electrode ERPs
 mast_erp_plots <- map(electrodes, ~ mast_scatter_fun(.x))
 avr_erp_plots <- map(electrodes, ~ avr_scatter_fun(.x))
