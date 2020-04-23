@@ -33,7 +33,7 @@ lpp_elec_rev <- c("B27", "B22", "B28", "B29", "A30", "A25")
 lpp_elec_left <- c("A27", "A26", "A30", "A29")
 epn_elec_right <- c("B25", "B26", "B24")
 epn_elec_left <- c("A28", "A27", "A29")
-front_left <- c("EXG2", "A3", "A9", "A10")
+front_left <- c("EXG2", "A3", "A9", "A10") #A2?
 front_right <- c("EXG1", "B2", "B7", "B8")
 # select variabes from questionnaire data set for analyses
 measures_int <- per_questionnaires %>% 
