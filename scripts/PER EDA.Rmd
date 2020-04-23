@@ -541,17 +541,21 @@ per_erp_filter_lat %>%
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, LPP, color = lateralization)) +
   geom_boxplot() + 
-  ggtitle("LPP box and whisker plots for each block\nwith filtered dataset")
+  ggtitle("LPP box and whisker plots for each block")
 per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, EPN, color = lateralization)) +
   geom_boxplot() +
-  ggtitle("EPN box and whisker plots for each block\nwith filtered dataset")
+  ggtitle("EPN box and whisker plots for each block")
+per_erp_rev %>% 
+  ggplot(., aes(block, LPP)) + 
+  geom_boxplot() + 
+  ggtitle("Centroparietal LPP box and whisker plots for each block")
 per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, front_avr, color = lateralization)) +
   geom_boxplot() +
-  ggtitle("Avr frontal component box and whisker plots for each block\nwith filtered dataset")
+  ggtitle("Avr frontal component box and whisker plots for each block")
 ```
 
 Based on these observations, the filtered dataset will be used for hypothesis testing.
