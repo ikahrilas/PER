@@ -16,6 +16,7 @@ library(car)
 library(robustlmm)
 library(emmeans)
 library(easystats)
+library(welchADF)
 library(moments)
 library(modelbased)
 library(patchwork)
@@ -536,9 +537,9 @@ per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = c("pid", "b
 ## LPP, EPN, and block condition
 
 ```{r visualize LPP by block, warning=FALSE}
-# box and whisker plots
+# box and whisker plots ### AVG == midline
 per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% # Change block order
   ggplot(., aes(block, LPP, color = lateralization)) +
   geom_boxplot() + 
   ggtitle("LPP box and whisker plots for each block")
@@ -555,7 +556,7 @@ per_erp_filter_lat %>%
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, front_avr, color = lateralization)) +
   geom_boxplot() +
-  ggtitle("Avr frontal component box and whisker plots for each block")
+  ggtitle("Avr frontal component box and whisker plots for each block") # omit midline condition
 ```
 
 ## Contrasts between conditions
@@ -572,11 +573,13 @@ summary(block_mod_lpp_filter)
 performance::check_model(block_mod_lpp_filter, panel = FALSE)
 ## LPP contrasts
 emmeans(block_mod_lpp_filter, pairwise ~ lateralization | block)$contrasts
+emmeans(block_mod_lpp_filter, pairwise ~ block | lateralization)$contrasts
 means_block_lpp_filter <- emmeans(block_mod_lpp_filter, pairwise ~ lateralization | block)
 contrast(means_block_lpp_filter, "poly")
-emmip(block_mod_filter, block ~ lateralization) # plot
+emmip(block_mod_lpp_filter, block ~ lateralization) # plot
 ## for interaction terms as well
 block_lpp_filter_df <- as.data.frame(emmeans(block_mod_lpp_filter, pairwise ~ lateralization * block ))
+block_lpp_filter_df
 
 # EPN
 block_mod_epn_filter <- lmerTest::lmer(EPN ~ block*lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat)
@@ -632,7 +635,7 @@ null_lpp_model <- lmer(LPP ~ (1|pid), data = filter(per_erp_filter_lat, laterali
 performance::icc(null_lpp_model)
 # 42.9% of the variance in LPP can be explained by between-participant effects.
 # relevel block variable
-per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Neu_Watch")
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
 # fit model one
 mod_one <- lmerTest::lmer(LPP ~ block + (1|pid), data = filter(per_erp_filter_lat, lateralization == "avg"))
 # check assumptions
@@ -1219,7 +1222,7 @@ summary(stm_lpp_rev)
 pa_lpp_rev <- lmerTest::lmer(LPP ~ pos_affectivity + (1|pid), data = per_erp_rev)
 summary(pa_lpp_rev)
 # right front
-stm_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+stm_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>%  filter(lateralization == "left"))
 summary(stm_front)
 pa_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
 summary(pa_front)
