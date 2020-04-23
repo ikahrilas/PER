@@ -552,11 +552,6 @@ per_erp_filter_lat %>%
   ggplot(., aes(block, front_avr, color = lateralization)) +
   geom_boxplot() +
   ggtitle("Avr frontal component box and whisker plots for each block\nwith filtered dataset")
-per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
-  ggplot(., aes(block, front_mast, color = lateralization)) +
-  geom_boxplot() +
-  ggtitle("Mast ref frontal component box and whisker plots for each block\nwith filtered dataset")
 ```
 
 Based on these observations, the filtered dataset will be used for hypothesis testing.
