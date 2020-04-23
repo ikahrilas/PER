@@ -136,6 +136,7 @@ per_erp_rev$block <- as.factor(per_erp_rev$block)
 per_erp_rev <- per_erp_rev %>% 
   select(pid, block, prop_trials, everything())
 ```
+
 ## Questionnaire Descriptive Statisitcs
 
 ```{r descriptive stats on variables of interest}
@@ -226,6 +227,7 @@ shapiro.test(pid_pa$pos_affectivity) %>%
 
 It is not significant, suggesting that the distribution of PA does not significantly deviate from the normal distribution.
 
+
 ## Negative Affectivity
 
 ```{r negative affectivity histogram}
@@ -257,6 +259,7 @@ shapiro.test(pid_na$neg_affectivity) %>%
 
 NA does not significantly deviate from the normal distribution.
 
+
 ## Savoring the Moment
 
 ```{r StM histogram}
@@ -277,6 +280,7 @@ per_erp %>%
   stat_qq_line() +
   ggtitle("Savoring the Moment QQPlot")
 ```
+
 ```{r shapiro-wilk test for StM}
 pid_StM <- per_erp %>% 
   group_by(pid) %>% 
@@ -285,9 +289,11 @@ shapiro.test(pid_StM$savoring_moment) %>%
   pander()
 ```
 
+
 ## LPP
 
 ### Histograms and QQplots for each block
+
 ```{r histograms and qqplots for LPP and EPN for each block, warning = FALSE, message = FALSE}
 eeg_by_pid <- per_erp %>% 
   group_by(pid, block) %>% 
@@ -317,7 +323,9 @@ components <- names(eeg_by_pid)[3:10]
 
 map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 ```
+
 for revised lpp electrode selection
+
 ```{r lpp rev selection, message=FALSE, warning=FALSE}
 eeg_by_pid_rev <- per_erp_rev %>% 
   group_by(pid, block) %>% 
@@ -426,7 +434,9 @@ eeg_by_pid_filter %>%
 
 map(components, ~map(blocks, ~hist_qq_fun_filter(trial = .x, component = .y), .y = .x))
 ```
+
 and also with revised lpp
+
 ```{r, warning=FALSE, message=FALSE}
 map(blocks, ~ norm_rev_fun(.x))
 ```
@@ -527,50 +537,26 @@ per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = c("pid", "b
 
 ```{r visualize LPP by block, warning=FALSE}
 # box and whisker plots
-per_erp_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
-  ggplot(., aes(block, LPP, color = lateralization)) +
-  geom_boxplot() +
-  ggtitle("LPP box and whisker plots for each block")
 per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, LPP, color = lateralization)) +
   geom_boxplot() + 
   ggtitle("LPP box and whisker plots for each block\nwith filtered dataset")
-per_erp_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
-  ggplot(., aes(block, EPN, color = lateralization)) +
-  geom_boxplot() +
-  ggtitle("EPN box and whisker plots for each block")
 per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, EPN, color = lateralization)) +
   geom_boxplot() +
   ggtitle("EPN box and whisker plots for each block\nwith filtered dataset")
-per_erp_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
-  ggplot(., aes(block, front_avr, color = lateralization)) +
-  geom_boxplot() +
-  ggtitle("Avr frontal component box and whisker plots for each block")
 per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, front_avr, color = lateralization)) +
   geom_boxplot() +
   ggtitle("Avr frontal component box and whisker plots for each block\nwith filtered dataset")
-per_erp_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
-  ggplot(., aes(block, front_mast, color = lateralization)) +
-  geom_boxplot() +
-  ggtitle("Mast ref frontal component box and whisker plots for each block")
 per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
   ggplot(., aes(block, front_mast, color = lateralization)) +
   geom_boxplot() +
   ggtitle("Mast ref frontal component box and whisker plots for each block\nwith filtered dataset")
-per_erp_rev %>%
-  ggplot(., aes(block, LPP)) +
-  geom_boxplot() +
-  ggtitle("Revised LPP box and whisker plots for each block")
 ```
 
 Based on these observations, the filtered dataset will be used for hypothesis testing.
