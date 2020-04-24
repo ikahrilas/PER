@@ -17,7 +17,7 @@ library(tidyverse)
 ```
 Before starting, we will load in coordinate files
 ```{r cartesian coordinates, message = FALSE}
-elec_loc <- read_csv("Equidistant Layout.csv")
+elec_loc <- read_csv(here("data", "layout", "Equidistant Layout.csv"))
 elec_loc <- elec_loc %>%
   rename("channel" = `channel name`) %>%
   filter(channel != "CMS", channel != "DRL")
@@ -36,6 +36,7 @@ ggplot(elec_loc, aes(x, y, label = channel)) +
 ```
 Now, we can merge these coordinates with the eeg data
 ```{r merge eeg data and electrode coordinates}
+erp_long <- read_csv(here("data", "created_data", "erp_long_form.csv"))
 erp_loc <- left_join(erp_long, elec_loc, by = c("electrode" = "channel"))
 ```
 ## Make topoplots for each of the block conditions over the 400 - 1000 ms time window
