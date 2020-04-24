@@ -825,7 +825,7 @@ mod_two_lpp_rob <- rlmer(LPP ~ block * scale(pos_affectivity, center = TRUE, sca
 confint.rlmerMod(mod_two_lpp_rob)
 
 # check model two with EPN as outcome
-mod_two_epn <- lmerTest::lmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+mod_two_epn <- lmerTest::lmer(EPN ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
 check_model(mod_two_epn, panel = FALSE)
 summary(mod_two_epn)
 # try robust model
@@ -977,11 +977,15 @@ There appears to be some positive relations. Let's test a linear model using MLM
 
 ```{r eeg predicted by arousal}
 mod_arousal_lpp <- lmerTest::lmer(LPP ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-summary(mod_arousal)
+summary(mod_arousal_lpp)
 mod_arousal_lpp_rev <- lmerTest::lmer(LPP ~ arousal + (1|pid), data = per_erp_rev)
-summary(mod_arousal_rev)
+summary(mod_arousal_lpp_rev)
 mod_arousal_epn <- lmerTest::lmer(EPN ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_arousal_epn)
+right_frontal_arousal <- lmerTest::lmer(front_avr ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+summary(right_frontal_arousal)
+left_frontal_arousal <- lmerTest::lmer(front_avr ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
+summary(left_frontal_arousal)
 ```
 
 ## EEG and valence ratings
@@ -991,12 +995,14 @@ Scatterplot between LPP and valence ratings
 ```{r valence ratings and LPP, warning=FALSE, message=FALSE}
 # LPP
 per_erp_filter_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
 ggplot(., aes(valence, LPP, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(se = FALSE) +
   ggtitle("Valence ratings and LPP")
 # EPN
-per_erp_filter_lat %>% 
+per_erp_filter_lat  %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>%  
 ggplot(., aes(valence, EPN, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(se = FALSE) +
@@ -1010,6 +1016,7 @@ ggplot(., aes(valence, LPP)) +
 # frontal
 per_erp_filter_lat %>% 
 filter(lateralization %in% c("left", "right")) %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>% 
 ggplot(., aes(valence, front_avr, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(se = FALSE) +
@@ -1049,6 +1056,10 @@ mod_valence_epn <- lmerTest::lmer(EPN ~ poly(valence, 2) + (1|pid), data = per_e
 summary(mod_valence_epn)
 mod_valence_lpp_rev <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_rev)
 summary(mod_valence_lpp_rev)
+front_right_valence <- lmerTest::lmer(front_avr ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+summary(front_right_valence)
+front_left_valence <- lmerTest::lmer(front_avr ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
+summary(front_left_valence)
 ```
 
 Results indicate that there is a curvilinear relationship between LPP and arousal.
@@ -1058,12 +1069,14 @@ Results indicate that there is a curvilinear relationship between LPP and arousa
 Scatterplot between LPP and dificulty ratings.
 
 ```{r difficulty ratings and LPP, warning=FALSE, message=FALSE}
-per_erp_filter_lat %>%
+per_erp_filter_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
 ggplot(., aes(difficulty, LPP, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(method = "lm", se = FALSE) +
   ggtitle("Difficulty ratings and LPP")
-per_erp_filter_lat %>%
+per_erp_filter_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
 ggplot(., aes(difficulty, EPN, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(method = "lm", se = FALSE) +
@@ -1075,6 +1088,7 @@ ggplot(., aes(difficulty, LPP)) +
   ggtitle("Difficulty ratings and centroparietal LPP")
 per_erp_filter_lat %>% 
   filter(lateralization %in% c("left", "right")) %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>% 
   ggplot(., aes(difficulty, front_avr, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(method = "lm", se = FALSE) +
@@ -1091,8 +1105,10 @@ mod_difficulty_epn <- lmerTest::lmer(EPN ~ difficulty + (1|pid), data = per_erp_
 summary(mod_difficulty_epn)
 mod_difficulty_lpp_rev <- lmerTest::lmer(LPP ~ difficulty + (1|pid), data = per_erp_rev)
 summary(mod_difficulty_lpp_rev)
-mod_difficulty_front <- lmerTest::lmer(front_avr ~ difficulty * block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left")))
-summary(mod_difficulty_front)
+mod_difficulty_front_left <- lmerTest::lmer(front_avr ~ difficulty + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left")))
+summary(mod_difficulty_front_left)
+mod_difficulty_front_right <- lmerTest::lmer(front_avr ~ difficulty + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right")))
+summary(mod_difficulty_front_right)
 # there is an interaction with Positive increase and difficulty for the left frontal component.
 ```
 
@@ -1181,13 +1197,13 @@ Indeed, the results indicated that the relationship is curvilinear.
 
 Exploration of traits and average EEG components collapsed across all groups.
 ```{r trait and average eeg exploration}
-stm_lpp <- lmerTest::lmer(LPP ~ savoring_moment * lateralization + (1|pid), data = per_erp_filter_lat)
+stm_lpp <- lmerTest::lmer(LPP ~ savoring_moment + lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
 summary(stm_lpp)
-pa_lpp <- lmerTest::lmer(LPP ~ pos_affectivity * lateralization + (1|pid), data = per_erp_filter_lat)
+pa_lpp <- lmerTest::lmer(LPP ~ pos_affectivity + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right")))
 summary(pa_lpp)
-stm_epn <- lmerTest::lmer(EPN ~ savoring_moment * lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+stm_epn <- lmerTest::lmer(EPN ~ savoring_moment + lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
 summary(stm_epn)
-pa_epn <- lmerTest::lmer(EPN ~ pos_affectivity * lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+pa_epn <- lmerTest::lmer(EPN ~ pos_affectivity + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left")))
 summary(pa_epn)
 # revised lpp
 stm_lpp_rev <- lmerTest::lmer(LPP ~ savoring_moment + (1|pid), data = per_erp_rev)
@@ -1197,7 +1213,7 @@ summary(pa_lpp_rev)
 # right front
 stm_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>%  filter(lateralization == "left"))
 summary(stm_front)
-pa_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
-summary(pa_front)
+stm_right_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right")))
+summary(stm_right_front)
 ```
 
