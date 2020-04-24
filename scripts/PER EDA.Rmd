@@ -530,6 +530,8 @@ per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = c("pid", "b
   full_join(tmp_front_avr_filter, by = c("pid", "block", "lateralization")) %>% 
   full_join(tmp_front_mast_filter, by = c("pid", "block", "lateralization")) %>% 
   select(pid, block, prop_trials, LPP, EPN, front_avr, front_mast, lateralization, everything())
+# write dataset to file to be used elsewhere
+write_csv(per_erp_filter_lat, here("data", "created_data", "per_data_for_analyses.csv"))
 ```
 
 # Bivariate Relationships
