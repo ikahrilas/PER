@@ -12,7 +12,7 @@ mast_long <- pivot_longer(erp_mast_wide, cols = c(paste0("A", 1:32), paste0("B",
 avr_long <- pivot_longer(erp_avr_wide, cols = c(paste0("A", 1:32), paste0("B", 1:32), "EXG1", "EXG2"), names_to = "electrode", values_to = "mv")
 
 # define character vector of electrode names
-electrodes <- c(paste0("A", 1:32), paste0("B", 1:32))
+electrodes <- c(paste0("A", 1:32), paste0("B", 1:32), "EXG1", "EXG2")
 
 # scatterplot function for mastoid reference
 mast_scatter_fun <- function(elec) {
@@ -83,9 +83,9 @@ avr_scatter_fun_passive <- function(elec) {
     theme_classic()
 }
 # ERP function for right frontal component
-front_r_scatter_fun_passive <- function(elec) {
+front_scatter_fun_all <- function(elec) {
   avr_long %>% 
-    filter(electrode == elec, block %in% c("Pos_Watch", "Pos_Inc")) %>% 
+    filter(electrode == elec) %>% 
     mutate(ms = round(ms, digits = -0.8)) %>% # downsample to speed up plotting
     group_by(block, ms) %>% 
     summarize(mv = mean(mv, na.rm = TRUE)) %>%   
@@ -121,6 +121,7 @@ mast_erp_plots <- map(electrodes, ~ mast_scatter_fun(.x))
 avr_erp_plots <- map(electrodes, ~ avr_scatter_fun(.x))
 mast_erp_plots_passive <- map(electrodes, ~ mast_scatter_fun_passive(.x))
 avr_erp_plots_passive <- map(electrodes, ~ avr_scatter_fun_passive(.x))
+front_component_all <- map("EXG2", ~ front_scatter_fun_all(.x))
 
 # export images to appropriate folders
 map2(mast_erp_plots, electrodes, ~{
