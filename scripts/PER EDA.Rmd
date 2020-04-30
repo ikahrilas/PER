@@ -10,6 +10,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(here)
+library(bootmlm)
 library(pander)
 library(ggpubr)
 library(car)
@@ -30,11 +31,11 @@ per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 
 ```{r averaging and questionnaire variable selection, include = FALSE}
 lpp_elec_right <- c("B23", "B24", "B26", "B27")
-lpp_elec_rev <- c("B27", "B22", "B28", "B29", "A30", "A25")
+lpp_elec_rev <- c("B22", "B28", "A25")
 lpp_elec_left <- c("A27", "A26", "A30", "A29")
 epn_elec_right <- c("B25", "B26", "B24")
 epn_elec_left <- c("A28", "A27", "A29")
-front_left <- c("EXG2", "A3", "A9", "A10") #A2?
+front_left <- c("EXG2", "A3", "A9", "A10")
 front_right <- c("EXG1", "B2", "B7", "B8")
 # select variabes from questionnaire data set for analyses
 measures_int <- per_questionnaires %>% 
@@ -617,7 +618,7 @@ block_epn_filter_df <- as.data.frame(emmeans(block_mod_epn_filter, pairwise ~ la
 block_mod_front_avr_fil <- lmerTest::lmer(front_avr ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
 summary(block_mod_front_avr_fil)
 emmeans(block_mod_front_avr_fil, pairwise ~ block | lateralization)$contrasts
-# due to overly stringent p-value adjustment, some differences arent' signficant. However, there are noticeable effects
+# due to overly stringent p-value adjustment, some differences aren't signficant. However, there are noticeable effects
 # for pos watch - pos inc in the right hemisphere and neg watch - neg dec in the left.
 
 #---- all possible block contrasts for average conditions
@@ -667,7 +668,7 @@ null_epn_model <- lmer(EPN ~ (1|pid), data = filter(per_erp_filter_lat, laterali
 icc(null_epn_model)
 # 76.5% of the  variance in EPN can be explained by between-participant effects
 # fit model one with EPN
-mod_one_epn <- lmerTest::lmer(EPN ~ block + lateralization + (1|pid), data = per_erp_filter_lat  %>% filter(lateralization %in% c("left", "right")))
+mod_one_epn <- lmerTest::lmer(EPN ~ block + lateralization + (1|pid), data = per_erp_filter_lat  %>% filter(lateralization %in% c("right", "left")))
 # check assumptions
 check_model(mod_one_epn)
 summary(mod_one_epn)
@@ -679,38 +680,18 @@ summary(mod_one_epn_lat)
 report(mod_one_epn_lat)
 
 # frontal avr as outcome
-per_erp_lat$block <- relevel(per_erp_lat$block, "Neu_Watch")
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
-null_front_avr <- lmerTest::lmer(front_avr ~ (1|pid), data = per_erp_lat) # need to indicate lateralization
+null_front_avr <- lmerTest::lmer(front_avr ~ (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
 icc(null_front_avr)
-# 34.9% of the variance is accounted for by between participant effects
-# fit model one with front_avr
-mod_one_front_avr_left <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_lat %>% filter(lateralization == "left"))
-mod_one_front_avr_right <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_lat %>% filter(lateralization == "right"))
-check_model(mod_one_front_avr_left, panel = FALSE)
-check_model(mod_one_front_avr_right, panel = FALSE)
-summary(mod_one_front_avr_left)
-summary(mod_one_front_avr_right)
-# same with filtered dataset
+# model one
 mod_one_front_avr_left_fil <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
 mod_one_front_avr_right_fil <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
 check_model(mod_one_front_avr_left_fil, panel = FALSE)
 check_model(mod_one_front_avr_right_fil, panel = FALSE)
-summary(mod_one_front_avr_left)
-summary(mod_one_front_avr_right)
+summary(mod_one_front_avr_left_fil)
+summary(mod_one_front_avr_right_fil)
 
 # frontal mast as outcome
-null_front_mast_right <- lmerTest::lmer(front_mast ~ (1|pid), per_erp_lat %>% filter(lateralization == "right"))
-null_front_mast_left <- lmerTest::lmer(front_mast ~ (1|pid), per_erp_lat %>% filter(lateralization == "left"))
-icc(null_front_mast_right) # 30%
-icc(null_front_mast_left) # 24.4%
-# model one
-mod_one_front_mast_right <- lmerTest::lmer(front_mast ~ block + (1|pid), per_erp_lat %>% filter(lateralization == "right"))
-mod_one_front_mast_left <- lmerTest::lmer(front_mast ~ block + (1|pid), per_erp_lat %>% filter(lateralization == "left"))
-check_model(mod_one_front_mast_right, panel = FALSE)
-check_model(mod_one_front_mast_left, panel = FALSE)
-summary(mod_one_front_mast_right)
-summary(mod_one_front_mast_left)
 # model one with filtered dataset
 mod_one_front_mast_right_fil <- lmerTest::lmer(front_mast ~ block + (1|pid), per_erp_filter_lat %>% filter(lateralization == "right"))
 mod_one_front_mast_left_fil <- lmerTest::lmer(front_mast ~ block + (1|pid), per_erp_filter_lat %>% filter(lateralization == "left"))
@@ -734,12 +715,12 @@ summary(mod_one_lpp_rev)
 ## relevel block variable and inspect negative regulation blocks
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch") 
 ## fit model
-mod_one_lpp_neg <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+mod_one_lpp_neg <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
 check_model(mod_one_neg, panel = FALSE)
 summary(mod_one_lpp_neg)
 ## relevel block variable and inspect positive regulation blocks
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
-mod_one_lpp_pos <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+mod_one_lpp_pos <- lmerTest::lmer(LPP ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right", "left")))
 summary(mod_one_lpp_pos)
 
 # EPN
@@ -775,8 +756,8 @@ summary(mod_one_pos_lpp_rev)
 # front avr
 ## right side
 ### relelve for positive watch reference
-per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
-mod_one_pos_front_right_avr_fil <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+per_erp_filter_lat$block <- relevel(as.factor(per_erp_filter_lat$block), "Pos_Watch")
+mod_one_pos_front_right_avr_fil <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right", prop_trials >= .5))
 summary(mod_one_pos_front_right_avr_fil)
 ### relevel for negative watch reference
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch") 
@@ -792,9 +773,21 @@ summary(mod_one_pos_front_left_avr_fil)
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch") 
 mod_one_neg_front_left_avr <- lmerTest::lmer(front_avr ~ block + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
 summary(mod_one_neg_front_left_avr)
-## test three-way interaction between left and right
+## test lateralization interaction
 mod_one_neg_front_avr_fil <- lmerTest::lmer(front_avr ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right", "left")))
 summary(mod_one_neg_front_avr_fil)
+# interaction with positive reference
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_one_pos_front_avr_fil <- lmerTest::lmer(front_avr ~ block * lateralization + (1|lateralization:pid) + (lateralization|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right", "left")))
+check_model(mod_one_pos_front_avr_fil, panel = FALSE)
+summary(mod_one_pos_front_avr_fil)
+# bootstrap
+boot <- bootMer(mod_one_pos_front_avr_fil, FUN = fixef, nsim = 100)
+boot::boot.ci(boot, type = "stud")
+confint.merMod(mod_one_pos_front_avr_fil, parm = "beta_", boot.type = "perc", nsim = 100)
+mySumm <- function(x) {
+  c(getME(x, "beta"), sigma(x))
+}
 ```
 
 ## Aim Two: LPP and Positive Affectivity
@@ -847,10 +840,13 @@ mod_two_lpp_rev <- lmerTest::lmer(LPP ~ block * scale(pos_affectivity, center = 
 check_model(mod_two_lpp_rev, panel = FALSE)
 summary(mod_two_lpp_rev)
 r2beta(mod_two_lpp_rev)
+# Is LPP averaged across all conditions related to positive affectivity?
+mod_lpp_avg_pa <- lmer(LPP ~ scale(neg_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_rev)
+summary(mod_lpp_avg_pa)
 
 # check right frontal component
-per_erp_lat$block <- relevel(per_erp_lat$block, "Neu_Watch")
-right_pos_mod <- lmerTest::lmer(front_avr ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_lat %>% filter(lateralization == "right"))
+per_erp_lat$block <- relevel(per_erp_lat$block, "Neg_Watch")
+right_pos_mod <- lmerTest::lmer(front_avr ~ block * scale(masq_pa, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_lat %>% filter(lateralization == "left"))
 summary(right_pos_mod)
 
 #----- old code, might be useful down the line.
@@ -907,9 +903,8 @@ check_model(mod_3_lpp_rev, panel = FALSE)
 summary(mod_3_lpp_rev)
 
 # frontal component
-per_erp_lat$block <-  relevel(per_erp_lat$block, "Pos_Watch")
 per_erp_filter_lat$block <-  relevel(per_erp_filter_lat$block, "Pos_Watch")
-mod_3_front <- lmerTest::lmer(front_avr ~ block * scale(savoring_moment, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
+mod_3_front <- lmerTest::lmer(front_avr ~ block * scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
 check_model(mod_3_front, panel = FALSE)
 summary(mod_3_front)
 
@@ -995,14 +990,16 @@ Scatterplot between LPP and valence ratings
 ```{r valence ratings and LPP, warning=FALSE, message=FALSE}
 # LPP
 per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
+  filter(lateralization %in% c("left", "right")) %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>% 
 ggplot(., aes(valence, LPP, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(se = FALSE) +
   ggtitle("Valence ratings and LPP")
 # EPN
 per_erp_filter_lat  %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>%  
+  filter(lateralization %in% c("left", "right")) %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>%  
 ggplot(., aes(valence, EPN, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(se = FALSE) +
@@ -1020,7 +1017,7 @@ filter(lateralization %in% c("left", "right")) %>%
 ggplot(., aes(valence, front_avr, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(se = FALSE) +
-  ggtitle("Valence ratings and EPN")
+  ggtitle("Valence ratings and frontal component")
 ```
 
 At first glance, there does not appear to be a relationship. However, it is hypothesized that more negatively- and positively-valenced images may positively correlate with LPP. Let's test this by fitting a polynomial regression line through the scatterplot.
@@ -1028,12 +1025,14 @@ At first glance, there does not appear to be a relationship. However, it is hypo
 ```{r, message=FALSE, warning=FALSE}
 # LPP
 per_erp_filter_lat %>% 
+    filter(lateralization %in% c("left", "right")) %>% 
 ggplot(., aes(valence, LPP, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
   ggtitle("Valence ratings and LPP")
 # EPN
 per_erp_filter_lat %>% 
+    filter(lateralization %in% c("left", "right")) %>% 
 ggplot(., aes(valence, EPN, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
@@ -1052,8 +1051,8 @@ Now, conduct a polynomial regression using MLM.
 mod_valence_lpp <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
 summary(mod_valence_lpp)
 check_model(mod_valence_lpp, panel = FALSE)
-mod_valence_epn <- lmerTest::lmer(EPN ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-summary(mod_valence_epn)
+mod_valence_epn <- lmerTest::lmer(EPN ~ poly(valence, 2) * lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+summary(mod_valence_epn) #---- Three way interaction
 mod_valence_lpp_rev <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_rev)
 summary(mod_valence_lpp_rev)
 front_right_valence <- lmerTest::lmer(front_avr ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
@@ -1213,7 +1212,116 @@ summary(pa_lpp_rev)
 # right front
 stm_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>%  filter(lateralization == "left"))
 summary(stm_front)
-stm_right_front <- lmerTest::lmer(front_avr ~ savoring_moment + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right")))
+stm_right_front <- lmerTest::lmer(front_avr ~ depression + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right")))
 summary(stm_right_front)
 ```
 
+# check out arousal/valence predicted by block/personality traits
+```{r}
+#---- POS_AFFECTIVITY
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+mod_arousal_pa <- lmerTest::lmer(arousal ~ block * pos_affectivity + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_pa)
+## interaction between arousal ratings and positive affecitivity
+mod_valence_pa <- lmerTest::lmer(valence ~ block * pos_affectivity + (1|pid), data = per_erp_filter_lat)
+summary(mod_valence_pa)
+## interaction between valence ratings and positive affectivity
+
+#----- SAVORING THE MOMENT
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_arousal_stm <- lmerTest::lmer(arousal ~ block * savoring_moment + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_stm)
+mod_arousal_stm <- lmerTest::lmer(valence ~ block * savoring_moment + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_stm)
+## no interactions for savoring the moment
+
+#---- DEPRESSION
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+mod_arousal_dep <- lmerTest::lmer(arousal ~ depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_dep)
+# nothing
+mod_arousal_dep_block <- lmerTest::lmer(arousal ~ block * depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_dep_block)
+# nothing
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_valence_dep <- lmerTest::lmer(valence ~ depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_valence_dep)
+mod_valence_dep_block <- lmerTest::lmer(valence ~ block*depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_valence_dep_block)
+# nothing
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_arousal_dep_block_neg <- lmerTest::lmer(arousal ~ block * depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_dep_block_neg)
+
+#--- ERQ SUBSCALES - LOOK AT VALENCE TOO
+# reappraisal
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_arousal_reappraisal <- lmerTest::lmer(arousal ~ erq_reappraisal + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_reappraisal)
+mod_arousal_reappraisal_block <- lmerTest::lmer(arousal ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_arousal_reappraisal_block)
+# nothing here
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_arousal_reappraisal_block_pos <- lmerTest::lmer(arousal ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
+summary(mod_arousal_reappraisal_block_pos)
+## interactin for erq with pos_dec vs. watch and arousal
+
+# suppression - LOOK AT VALENCE???
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_arousal_reappraisal <- lmerTest::lmer(arousal ~ erq_suppression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_reappraisal)
+mod_arousal_reappraisal_block <- lmerTest::lmer(arousal ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_arousal_reappraisal_block)
+# Interaction between neg inc vs. neg watch and arousal by suppression - doesn't make a whole lot of sense
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_arousal_reappraisal_block_pos <- lmerTest::lmer(arousal ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
+summary(mod_arousal_reappraisal_block_pos)
+# nothing
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_arousal_reappraisal <- lmerTest::lmer(valence ~ erq_suppression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_reappraisal)
+mod_arousal_reappraisal_block <- lmerTest::lmer(arousal ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_arousal_reappraisal_block)
+# Interaction between neg inc vs. neg watch and arousal by suppression - doesn't make a whole lot of sense
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_arousal_reappraisal_block_pos <- lmerTest::lmer(arousal ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
+summary(mod_arousal_reappraisal_block_pos)
+# nothing
+
+
+
+#----- TMMS Subscales
+## repair
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+arousal_repair <- lmerTest::lmer(arousal ~ tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(arousal_repair)
+# nothing
+arousal_repair_block <- lmerTest::lmer(arousal ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(arousal_repair_block)
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+arousal_repair_block_neg <- lmerTest::lmer(arousal ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(arousal_repair_block_neg)
+# interactions between TMMS subscale and neg_watch vs. Neg_dec - cool
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+arousal_repair_block_pos <- lmerTest::lmer(arousal ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(arousal_repair_block_pos)
+# nothing for positive
+# look at valence 
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+valence_repair <- lmerTest::lmer(valence ~ tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(valence_repair)
+# nothing
+valence_repair_block <- lmerTest::lmer(valence ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(valence_repair_block)
+# interactions between passive watch conditions here
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+valence_repair_block_neg <- lmerTest::lmer(valence ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(valence_repair_block_neg)
+# interactions here between neg ince vs. neg watch and tmms repair
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+valence_repair_block_pos <- lmerTest::lmer(valence ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(valence_repair_block_pos)
+# nothing here of interest
+## attention
+## suppression
+```
