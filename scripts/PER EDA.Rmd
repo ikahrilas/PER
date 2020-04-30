@@ -1254,7 +1254,7 @@ mod_arousal_dep_block_neg <- lmerTest::lmer(arousal ~ block * depression + (1|pi
 summary(mod_arousal_dep_block_neg)
 
 #--- ERQ SUBSCALES - LOOK AT VALENCE TOO
-# reappraisal
+# reappraisal arousal
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
 mod_arousal_reappraisal <- lmerTest::lmer(arousal ~ erq_reappraisal + (1|pid), data = per_erp_filter_lat)
 summary(mod_arousal_reappraisal)
@@ -1264,6 +1264,18 @@ summary(mod_arousal_reappraisal_block)
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
 mod_arousal_reappraisal_block_pos <- lmerTest::lmer(arousal ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
 summary(mod_arousal_reappraisal_block_pos)
+## interactin for erq with pos_dec vs. watch and arousal
+# reappraisal valence
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_valence_reappraisal <- lmerTest::lmer(valence ~ erq_reappraisal + (1|pid), data = per_erp_filter_lat)
+summary(mod_valence_reappraisal)
+mod_valence_reappraisal_block <- lmerTest::lmer(valence ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_arousal_reappraisal_block)
+# interaction between negative increase and erq suppression - not what would be suspected
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_valence_reappraisal_block_pos <- lmerTest::lmer(valence ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
+summary(mod_valence_reappraisal_block_pos)
+# intearction between positive decrease and erq reappraisal
 ## interactin for erq with pos_dec vs. watch and arousal
 
 # suppression - LOOK AT VALENCE???
@@ -1288,7 +1300,13 @@ mod_arousal_reappraisal_block_pos <- lmerTest::lmer(arousal ~ block*erq_suppress
 summary(mod_arousal_reappraisal_block_pos)
 # nothing
 
-
+## suppression and valence
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_valence_reappraisal <- lmerTest::lmer(valence ~ erq_suppression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_reappraisal)
+mod_valence_reappraisal_block <- lmerTest::lmer(valence ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_valence_reappraisal_block)
+# Interaction between neg inc vs. neg watch and arousal by suppression - doesn't make a whole lot of sense
 
 #----- TMMS Subscales
 ## repair
