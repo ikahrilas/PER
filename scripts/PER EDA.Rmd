@@ -1369,6 +1369,7 @@ per_erp %>%
 per_erp %>% 
   distinct(ethnicity) %>% 
   ungroup() %>% 
-  count(ethnicity)
+  count(ethnicity) %>% 
+  mutate(percentage = n / sum(n))
 ```
 
