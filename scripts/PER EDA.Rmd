@@ -39,7 +39,7 @@ front_left <- c("EXG2", "A3", "A9", "A10")
 front_right <- c("EXG1", "B2", "B7", "B8")
 # select variabes from questionnaire data set for analyses
 measures_int <- per_questionnaires %>% 
-  select(pid:valence, age, sex, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
+  select(pid:valence, age, sex, handedness, ethnicity, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
          anticipating:masq_aa, tmms_repair:depression)
 
 LPP_right <- erp_mast_wide %>%
@@ -956,7 +956,7 @@ per_erp_filter_lat %>%
 # Centro-parietal LPP
 per_erp_rev %>% 
   ggplot(., aes(arousal, LPP)) +
-  geom_jitter(width = 0.1, height = 0.1) +
+  geom_jitter(width = 0.1, height = 0.1) +$
   ggtitle("Arousal ratings and LPP") +
   geom_smooth(method = "lm", se = FALSE)
 # frontal
@@ -1345,3 +1345,30 @@ summary(valence_repair_block_pos)
 ## attention
 ## suppression
 ```
+
+```{r descriptive statistics}
+# sex
+per_erp %>% 
+  distinct(sex) %>% 
+  ungroup() %>% 
+  count(sex)
+
+# age
+range(per_erp$age)
+mean(per_erp$age)
+sd(per_erp$age)
+
+# race
+per_erp %>% 
+  distinct(Race) %>% 
+  ungroup() %>% 
+  count(Race) %>% 
+  mutate(percentage = n / sum(n))
+
+# ethnicity
+per_erp %>% 
+  distinct(ethnicity) %>% 
+  ungroup() %>% 
+  count(ethnicity)
+```
+
