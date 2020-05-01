@@ -185,3 +185,36 @@ levels(per_full$block) <- c("Neg_Dec", "Neg_Inc", "Neg_Watch", "Neu_Watch", "Pos
 # write to file
 write_csv(per_full, here("data", "created_data", "per_measures.csv"))
 ```
+
+McDonald's Omega reliability coefficients
+
+```{r derive reliability coefficients}
+library(MBESS)
+# SBI measures
+## anticipating
+ci.reliability(per_dataset %>% 
+                 select(sbi_1, sbi_7, sbi_13, sbi_19, sbi_4_r, sbi_10_r, sbi_16_r, sbi_22_r),
+               type = "omega")
+## savoring the moment
+ci.reliability(per_dataset %>% 
+                 select(sbi_5 ,sbi_11, sbi_17, sbi_23, sbi_2_r, sbi_8_r, sbi_14_r, sbi_20_r),
+               type = "omega")
+## reminiscing
+ci.reliability(per_dataset %>% 
+                 select(sbi_3, sbi_9, sbi_15, sbi_21, sbi_6_r, sbi_12_r, sbi_18_r, sbi_24_r),
+               type = "omega")
+# Positive Affectivity
+ci.reliability(per_dataset %>% 
+                 select(t_panas_19, t_panas_24, t_panas_20, t_panas_14, t_panas_11, t_panas_5, t_panas_9, t_panas_16,  t_panas_15, t_panas_23),
+               type = "omega")
+# Positive Affect
+ci.reliability(per_dataset %>% 
+                 select(s_panas_19, s_panas_24, s_panas_20, s_panas_14, s_panas_11, s_panas_5, s_panas_9, s_panas_16, s_panas_15, s_panas_23),
+               type = "omega")
+# Negative Affect
+ci.reliability(per_dataset %>% 
+                 select(s_panas_3, s_panas_27, s_panas_4, s_panas_7, s_panas_25, s_panas_6, s_panas_2, s_panas_26, s_panas_8, s_panas_13),
+               type = "omega")
+
+```
+
