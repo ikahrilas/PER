@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Load in packages
 
-```{r load in tidyverse}
+```{r load in tidyverse, message = FALSE}
 library(tidyverse)
 library(here)
 ```
@@ -20,16 +20,38 @@ Create a vectors with .mul and .evt names
 
 ```{r file names}
 # vector of all files in working directory partitioned by avg montage and evt files
-files_mast <- list.files(here("data", "mastoid_ref"))
-files_avg <- list.files(here("data", "avg_ref"))
-files_evt <- list.files(here("data", "evt"))
+files_mast <- list.files(here("data", "mast_export"))
+files_avg <- list.files(here("data", "avr_export"))
+files_evt <- list.files(here("data", "mast_evt"))
+# remove 206201831 and 206201831b, as these files will have to be handled separately
+rem_case <- function(string) {
+string[-(str_which(string, "206201831"))]
+}
+split_case_mast <- str_subset(files_mast, "206201831")
+split_case_avr <- str_subset(files_avg, "206201831")
+split_case_evt <- str_subset(files_evt, "206201831")
+
+lst <- map(list(files_mast,
+           files_avg, 
+           files_evt), ~ rem_case(.x))
+# assign new character vectors back to variables
+files_mast <- lst[[1]]
+files_avg <- lst[[2]]
+files_evt <- lst[[3]]
 ```
 Read in .mul and .evt files
 ```{r read in .evt files, warning = FALSE, message = FALSE}
 #preallocate space
 mastoid <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
-avg <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
-evt <- tibble(
+avr <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
+evt_avr <- tibble(
+  Tmu = rep(NA, times = 51*7),
+  block = rep(NA, times = 51*7),
+  n_trials = rep(NA, times = 51*7),
+  pid = rep(NA, times = 51*7),
+  prop_trials = rep(NA, times = 51*7)
+)
+mast_avr <- tibble(
   Tmu = rep(NA, times = 51*7),
   block = rep(NA, times = 51*7),
   n_trials = rep(NA, times = 51*7),
@@ -48,7 +70,7 @@ block_names <- c("Pos_Inc",
 
 # read in evt files, make columns for block, number of trials, and pid. This cleans names up, too.
 evt <- map_df(files_evt, ~{
-  read_table(here("data", "evt", .x)) %>% 
+  read_table(here("data", "mast_evt", .x)) %>% 
   separate(`Code	TriNo	Comnt`, into = c("block", "n_trials"), sep = " ") %>% 
   mutate(block = str_extract(block, block_names),
          n_trials = as.numeric(str_extract(n_trials, "[0-9]{2}")),
@@ -57,7 +79,7 @@ evt <- map_df(files_evt, ~{
 })
 
 # this reads all mastoid-referenced files into a list and generates pid, block, and ms variables
-mastoid <- map_df(here("data", "mastoid_ref", files_mast), ~ {
+mastoid <- map_df(here("data", "mast_export", files_mast), ~ {
   read_table2(.x, skip = 1) %>%
   mutate(
     pid = as.numeric(str_extract(.x, "[0-9]{7,}")),
@@ -71,15 +93,15 @@ mastoid <- map_df(here("data", "mastoid_ref", files_mast), ~ {
 # drop extraneous columns
 mastoid <- mastoid %>% select(-c(E67:X74, X71:X72))
 # this reads all average-referenced files into a list and generates, pid, block, and ms variables
-avg <- map_df(here("data", "avg_ref", files_avg), ~ {
+avg <- map_df(here("data", "avr_export", files_avg), ~ {
   read_table2(.x, skip = 1) %>%
   mutate(
     pid = as.numeric(str_extract(.x, "[0-9]{7,}")),
     block = rep(block_names, each = nrow(.) / 7),
     ms = rep(seq(from = -200, to = 3000, 
                    by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
-               times = 7)
-    )}
+               times = 7))
+  }
   )
 ```
 
@@ -87,6 +109,49 @@ avg <- map_df(here("data", "avg_ref", files_avg), ~ {
 # clean up electrode names
 names(avg) <- gsub("_.*", "", names(avg))
 names(mastoid) <- gsub("_.*", "", names(mastoid))
+```
+
+Merge split case with rest of the data
+
+```{r take care of split case}
+# mastoid reference
+split_case_mr <- bind_rows(read_table2(here("data", "mast_export", split_case_mast[1]), skip = 1), read_table2(here("data", "mast_export", split_case_mast[2]), skip = 1)) %>% 
+  mutate(
+    pid = as.numeric(str_extract(split_case_mast[1], "[0-9]{7,}")),
+    block = rep(block_names, each = nrow(.) / 7),
+    ms = rep(seq(from = -200, to = 3000, 
+                   by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
+               times = 7)) %>% 
+  select(-c(E67:X74))
+
+mastoid <- bind_rows(mastoid, split_case_mr)
+
+# average reference
+split_case_ar <- bind_rows(read_table2(here("data", "avr_export", split_case_avr[1]), skip = 1), read_table2(here("data", "avr_export", split_case_avr[2]), skip = 1)) %>% 
+  mutate(
+    pid = as.numeric(str_extract(split_case_avr[1], "[0-9]{7,}")),
+    block = rep(block_names, each = nrow(.) / 7),
+    ms = rep(seq(from = -200, to = 3000, 
+                   by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
+               times = 7))
+
+avg <- bind_rows(avg, split_case_ar)
+
+# evt data
+split_case_evt <- bind_rows(read_table(here("data", "mast_evt", split_case_evt[1])),
+          read_table(here("data", "mast_evt", split_case_evt[2]))) %>% 
+  separate(`Code	TriNo	Comnt`, into = c("block", "n_trials"), sep = " ") %>% 
+  mutate(block = c("Pos_Dec",
+                   "Neg_Inc",
+                   "Neu_Watch",
+                   "Pos_Inc",
+                   "Pos_Watch",
+                   "Neg_Dec",
+                   "Neg_Watch"),
+         n_trials = as.numeric(n_trials),
+         pid = as.numeric(str_extract(split_case_evt[1], "[0-9]+")),
+         prop_trials = n_trials / 40)
+evt <- bind_rows(evt, split_case_evt)
 ```
 
 ```{r merge mul and evt dataframes}
