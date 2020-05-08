@@ -43,15 +43,8 @@ Read in .mul and .evt files
 ```{r read in .evt files, warning = FALSE, message = FALSE}
 #preallocate space
 mastoid <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
-avr <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
-evt_avr <- tibble(
-  Tmu = rep(NA, times = 51*7),
-  block = rep(NA, times = 51*7),
-  n_trials = rep(NA, times = 51*7),
-  pid = rep(NA, times = 51*7),
-  prop_trials = rep(NA, times = 51*7)
-)
-mast_avr <- tibble(
+avg <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
+evt <- tibble(
   Tmu = rep(NA, times = 51*7),
   block = rep(NA, times = 51*7),
   n_trials = rep(NA, times = 51*7),
@@ -105,12 +98,6 @@ avg <- map_df(here("data", "avr_export", files_avg), ~ {
   )
 ```
 
-```{r clean up variable/condition names}
-# clean up electrode names
-names(avg) <- gsub("_.*", "", names(avg))
-names(mastoid) <- gsub("_.*", "", names(mastoid))
-```
-
 Merge split case with rest of the data
 
 ```{r take care of split case}
@@ -152,6 +139,12 @@ split_case_evt <- bind_rows(read_table(here("data", "mast_evt", split_case_evt[1
          pid = as.numeric(str_extract(split_case_evt[1], "[0-9]+")),
          prop_trials = n_trials / 40)
 evt <- bind_rows(evt, split_case_evt)
+```
+
+```{r clean up variable/condition names}
+# clean up electrode names
+names(avg) <- gsub("_.*", "", names(avg))
+names(mastoid) <- gsub("_.*", "", names(mastoid))
 ```
 
 ```{r merge mul and evt dataframes}
