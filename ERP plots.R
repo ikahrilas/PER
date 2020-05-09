@@ -9,13 +9,12 @@ library(tidyverse)
 library(eegUtils)
 library(haven)
 library(here)
+library(patchwork)
 #'
 #' read in data
 #+ read in eeg data, incude = FALSE
 eeg_df_mast <- read_csv(here("data", "created_data", "erp_mast.csv"))
 eeg_df_avr <- read_csv(here("data", "created_data", "erp_avr.csv"))
-as.character(eeg_df_mast$pid)
-as.character(eeg_df_avr$pid)
 #'
 #' define clusters of electrodes and time windows for each component
 #+ electrode clusters and time windows
@@ -31,6 +30,7 @@ front_right <- c("EXG1", "B2", "B7", "B8") # TBD
 erp_plot_fun <- function(dat, cluster, comp_name, time_window_low, time_window_high) {
   dat %>%
     select(all_of(cluster),  block:prop_trials) %>%
+    filter(ms < 2050) %>% 
     pivot_longer(., cols = cluster, names_to = "electrode", values_to = "mv") %>%
     group_by(block, ms) %>%
     summarize(mv = mean(mv, na.rm = TRUE)) %>%
@@ -62,8 +62,6 @@ erp_plot_fun <- function(dat, cluster, comp_name, time_window_low, time_window_h
                                      "Neutral Watch",
                                      "Positive Decrease", "Positive Watch", "Positive Increase"))
 }
-
-erp_plot_fun(eeg_df_mast, lpp_elec, "LPP", 400, 2000)
 #'
 #' Use pmap to iterate plotting function over list of parameters.
 #+ iterate and plot
@@ -73,10 +71,10 @@ plots <- pmap(list(dat = list(eeg_df_mast,
                               eeg_df_mast,
                               eeg_df_mast),
                    cluster = list(lpp_elec,
-                                  epn_elec_right,
-                                  epn_elec_left,
-                                  front_left,
-                                  front_right),
+                               epn_elec_right,
+                               epn_elec_left,
+                               front_left,
+                               front_right),
                    comp_name = c("LPP",
                                  "Right EPN",
                                  "Left EPN",
@@ -96,6 +94,6 @@ plots <- pmap(list(dat = list(eeg_df_mast,
 #'
 #' save images to workspace
 #+ save the images
-map2(plots, c("N200", "N450", "SP"), ~{
-  ggsave(plot = .x, filename = here("Images", paste0(.y, ".png")), device = "png", width = 8, height = 5, scale = 1.5)
+map2(plots, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, ".png")), device = "png", width = 8, height = 5, scale = 1.5)
 })
