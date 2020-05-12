@@ -121,7 +121,7 @@ mast_erp_plots <- map(electrodes, ~ mast_scatter_fun(.x))
 avr_erp_plots <- map(electrodes, ~ avr_scatter_fun(.x))
 mast_erp_plots_passive <- map(electrodes, ~ mast_scatter_fun_passive(.x))
 avr_erp_plots_passive <- map(electrodes, ~ avr_scatter_fun_passive(.x))
-front_component_all <- map("EXG2", ~ front_scatter_fun_all(.x))
+front_component_all <- map(electrodes, ~ front_scatter_fun_all(.x))
 
 # export images to appropriate folders
 map2(mast_erp_plots, electrodes, ~{
