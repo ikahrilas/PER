@@ -137,6 +137,18 @@ per_erp %>%
 
 ## Behavioral Rating Descriptive Statistics by Block
 
+```{r descriptive statistics for behavioral ratings}
+per_erp %>% 
+  group_by(block) %>% 
+  summarize(arousal_mean = mean(arousal, na.rm = TRUE),
+            arousal_sd = sd(arousal, na.rm = TRUE),
+            valence_mean = mean(valence, na.rm = TRUE),
+            valence_sd = sd(valence, na.rm = TRUE),
+            difficulty_mean = mean(difficulty, na.rm = TRUE),
+            difficulty_sd = sd(difficulty, na.rm = TRUE))
+```
+
+
 # Exploration of Questionnaire Data
 
 ```{r histograms and qqplots, message = FALSE, warning = FALSE}
@@ -175,91 +187,6 @@ name <- c("Anticipating", "Savoring the Moment", "Reminiscing", "SBI Total", "Po
 
 map2(names(meas_by_pid)[-1], name, ~ measure_hist_qq_fun(.x, .y))
 ```
-
-```{r PA QQplot}
-per_erp %>% 
-  group_by(pid) %>% 
-  summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE)) %>% 
-  ggplot(., aes(sample = pos_affectivity)) + 
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("PA QQPlot")
-```
-
-It would appear that there is a slight negative skew to the data, though it does not deviate from a gaussian distribution substantially. Let's confirm with a shapiro-wilk test for normality
-
-```{r shapiro-wilk test for positive affectivity, echo = FALSE}
-pid_pa <- per_erp %>% 
-  group_by(pid) %>% 
-  summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE))
-shapiro.test(pid_pa$pos_affectivity) %>% 
-  pander()
-```
-
-It is not significant, suggesting that the distribution of PA does not significantly deviate from the normal distribution.
-
-
-## Negative Affectivity
-
-```{r negative affectivity histogram}
-per_erp %>% 
-  group_by(pid) %>% 
-  summarize(neg_affectivity = mean(neg_affectivity, na.rm = TRUE)) %>% 
-  ggplot(., (aes(neg_affectivity))) +
-    geom_histogram(bins = 15) +
-    ggtitle("NA Histogram")
-```
-
-```{r negative affectivity qqplot}
-per_erp %>% 
-  group_by(pid) %>% 
-  summarize(neg_affectivity = mean(neg_affectivity, na.rm = TRUE)) %>% 
-  ggplot(., aes(sample = neg_affectivity)) + 
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("NA QQPlot")
-```
-
-```{r shapiro-wilk test for NA}
-pid_na <- per_erp %>% 
-  group_by(pid) %>% 
-  summarize(neg_affectivity = mean(neg_affectivity, na.rm = TRUE))
-shapiro.test(pid_na$neg_affectivity) %>% 
-  pander()
-```
-
-NA does not significantly deviate from the normal distribution.
-
-
-## Savoring the Moment
-
-```{r StM histogram}
-per_erp %>% 
-  group_by(pid) %>% 
-  summarize(savoring_moment = mean(savoring_moment, na.rm = TRUE)) %>% 
-  ggplot(., (aes(savoring_moment))) +
-    geom_histogram(bins = 14) +
-    ggtitle("Savoring the Moment Histogram")
-```
-
-```{r StM qqplot}
-per_erp %>% 
-  group_by(pid) %>% 
-  summarize(savoring_moment = mean(savoring_moment, na.rm = TRUE)) %>% 
-  ggplot(., aes(sample = savoring_moment)) + 
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("Savoring the Moment QQPlot")
-```
-
-```{r shapiro-wilk test for StM}
-pid_StM <- per_erp %>% 
-  group_by(pid) %>% 
-  summarize(savoring_moment = mean(savoring_moment, na.rm = TRUE))
-shapiro.test(pid_StM$savoring_moment) %>% 
-  pander()
-```
-
 
 ## LPP
 
