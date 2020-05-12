@@ -88,7 +88,7 @@ erp_plot_fun_passive <- function(dat, cluster, comp_name, time_window_low, time_
     # scale_color_manual(name = "Group", values = c("green", "blue", "red"))
     scale_color_viridis_d(name = "Group",
                           breaks = c("Neg_Watch", "Neu_Watch", "Pos_Watch"),
-                          labels = c("Negative Decrease", "Neutral Watch", "Positive Watch"))
+                          labels = c("Negative Watch", "Neutral Watch", "Positive Watch"))
 }
 #' plots for positive conditions
 #+ positive plot function
@@ -268,17 +268,17 @@ plots_negative <- pmap(list(dat = list(eeg_df_mast,
 #+ save the images
 # all
 map2(plots_all, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
-  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, "_all.png")), device = "png", width = 8, height = 5, scale = 1.5)
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", "all_blocks", paste0(.y, "_all.png")), device = "png", width = 8, height = 5, scale = 1.5)
 })
 # passive blocks
 map2(plots_passive, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
-  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, "_passive.png")), device = "png", width = 8, height = 5, scale = 1.5)
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", "passive_blocks", paste0(.y, "_passive.png")), device = "png", width = 8, height = 5, scale = 1.5)
 })
 # positive blocks
 map2(plots_positive, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
-  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, "_positive.png")), device = "png", width = 8, height = 5, scale = 1.5)
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", "positive_blocks", paste0(.y, "_positive.png")), device = "png", width = 8, height = 5, scale = 1.5)
 })
 # negative blocks
 map2(plots_negative, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
-  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, "_negative.png")), device = "png", width = 8, height = 5, scale = 1.5)
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", "negative_blocks", paste0(.y, "_negative.png")), device = "png", width = 8, height = 5, scale = 1.5)
 })
