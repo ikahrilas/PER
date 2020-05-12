@@ -50,9 +50,6 @@ erp_plot_fun <- function(dat, cluster, comp_name, time_window_low, time_window_h
           legend.key.size = unit(2, "line"),
           plot.title = element_text(hjust = 0.5),
           title = element_text(size = 16)) +
-    scale_linetype_discrete(name = "Trial Type",
-                            breaks = c("pure-incongruent-CT", "pure-congruent-CT"),
-                            labels = c("Incongruent", "Congruent")) +
     # scale_color_manual(name = "Group", values = c("green", "blue", "red"))
     scale_color_viridis_d(name = "Group",
                           breaks = c("Neg_Dec", "Neg_Watch", "Neg_Inc",
@@ -62,10 +59,104 @@ erp_plot_fun <- function(dat, cluster, comp_name, time_window_low, time_window_h
                                      "Neutral Watch",
                                      "Positive Decrease", "Positive Watch", "Positive Increase"))
 }
+#' plots for just passive conditions
+#+ passive plot function
+erp_plot_fun_passive <- function(dat, cluster, comp_name, time_window_low, time_window_high) {
+  dat %>%
+    filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")) %>% 
+    select(all_of(cluster),  block:prop_trials) %>%
+    filter(ms < 2050) %>% 
+    pivot_longer(., cols = cluster, names_to = "electrode", values_to = "mv") %>%
+    group_by(block, ms) %>%
+    summarize(mv = mean(mv, na.rm = TRUE)) %>%
+    ggplot(., aes(ms, mv, color = block)) +
+    geom_line(size = 1.1) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = c(time_window_low, time_window_high), linetype = "solid", size = 1.05) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    labs(x = "Time (ms)",
+         y = expression(paste("Amplitude ( ",mu,"V)")),
+         title = paste("Average", comp_name, "Waveforms")) +
+    theme_classic() +
+    theme(axis.title = element_text(size = 16),
+          axis.text = element_text(size = 12),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12),
+          legend.key.size = unit(2, "line"),
+          plot.title = element_text(hjust = 0.5),
+          title = element_text(size = 16)) +
+    # scale_color_manual(name = "Group", values = c("green", "blue", "red"))
+    scale_color_viridis_d(name = "Group",
+                          breaks = c("Neg_Watch", "Neu_Watch", "Pos_Watch"),
+                          labels = c("Negative Decrease", "Neutral Watch", "Positive Watch"))
+}
+#' plots for positive conditions
+#+ positive plot function
+erp_plot_fun_positive <- function(dat, cluster, comp_name, time_window_low, time_window_high) {
+  dat %>%
+    filter(block %in% c("Pos_Dec", "Pos_Watch", "Pos_Inc")) %>% 
+    select(all_of(cluster),  block:prop_trials) %>%
+    filter(ms < 2050) %>% 
+    pivot_longer(., cols = cluster, names_to = "electrode", values_to = "mv") %>%
+    group_by(block, ms) %>%
+    summarize(mv = mean(mv, na.rm = TRUE)) %>%
+    ggplot(., aes(ms, mv, color = block)) +
+    geom_line(size = 1.1) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = c(time_window_low, time_window_high), linetype = "solid", size = 1.05) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    labs(x = "Time (ms)",
+         y = expression(paste("Amplitude ( ",mu,"V)")),
+         title = paste("Average", comp_name, "Waveforms")) +
+    theme_classic() +
+    theme(axis.title = element_text(size = 16),
+          axis.text = element_text(size = 12),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12),
+          legend.key.size = unit(2, "line"),
+          plot.title = element_text(hjust = 0.5),
+          title = element_text(size = 16)) +
+    # scale_color_manual(name = "Group", values = c("green", "blue", "red"))
+    scale_color_viridis_d(name = "Group",
+                          breaks = c("Pos_Dec", "Pos_Watch", "Pos_Inc"),
+                          labels = c("Positive Decrease", "Positive Watch", "Positive Increase"))
+}
+#' plot function for negative condition
+#+ negative plot function
+erp_plot_fun_negative <- function(dat, cluster, comp_name, time_window_low, time_window_high) {
+  dat %>%
+    filter(block %in% c("Neg_Dec", "Neg_Watch", "Neg_Inc")) %>% 
+    select(all_of(cluster),  block:prop_trials) %>%
+    filter(ms < 2050) %>% 
+    pivot_longer(., cols = cluster, names_to = "electrode", values_to = "mv") %>%
+    group_by(block, ms) %>%
+    summarize(mv = mean(mv, na.rm = TRUE)) %>%
+    ggplot(., aes(ms, mv, color = block)) +
+    geom_line(size = 1.1) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_vline(xintercept = c(time_window_low, time_window_high), linetype = "solid", size = 1.05) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    labs(x = "Time (ms)",
+         y = expression(paste("Amplitude ( ",mu,"V)")),
+         title = paste("Average", comp_name, "Waveforms")) +
+    theme_classic() +
+    theme(axis.title = element_text(size = 16),
+          axis.text = element_text(size = 12),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12),
+          legend.key.size = unit(2, "line"),
+          plot.title = element_text(hjust = 0.5),
+          title = element_text(size = 16)) +
+    # scale_color_manual(name = "Group", values = c("green", "blue", "red"))
+    scale_color_viridis_d(name = "Group",
+                          breaks = c("Neg_Dec", "Neg_Watch", "Neg_Inc"),
+                          labels = c("Negative Decrease", "Negative Watch", "Negative Increase"))
+}
 #'
 #' Use pmap to iterate plotting function over list of parameters.
 #+ iterate and plot
-plots <- pmap(list(dat = list(eeg_df_mast,
+# all
+plots_all <- pmap(list(dat = list(eeg_df_mast,
                               eeg_df_avr,
                               eeg_df_avr,
                               eeg_df_mast,
@@ -91,9 +182,103 @@ plots <- pmap(list(dat = list(eeg_df_mast,
                                         2000,
                                         2000)),
                    .f = erp_plot_fun)
+# passive blocks
+plots_passive <- pmap(list(dat = list(eeg_df_mast,
+                                      eeg_df_avr,
+                                      eeg_df_avr,
+                                      eeg_df_mast,
+                                      eeg_df_mast),
+                           cluster = list(lpp_elec,
+                                          epn_elec_right,
+                                          epn_elec_left,
+                                          front_left,
+                                          front_right),
+                           comp_name = c("LPP",
+                                         "Right EPN",
+                                         "Left EPN",
+                                         "Left Frontal",
+                                         "Right Frontal"),
+                           time_window_low = c(400,
+                                               250,
+                                               250,
+                                               1000,
+                                               1000),
+                           time_window_high = c(2000,
+                                                400,
+                                                400,
+                                                2000,
+                                                2000)),
+                      .f = erp_plot_fun_passive)
+# positive blocks
+plots_positive <- pmap(list(dat = list(eeg_df_mast,
+                                       eeg_df_avr,
+                                       eeg_df_avr,
+                                       eeg_df_mast,
+                                       eeg_df_mast),
+                            cluster = list(lpp_elec,
+                                           epn_elec_right,
+                                           epn_elec_left,
+                                           front_left,
+                                           front_right),
+                            comp_name = c("LPP",
+                                          "Right EPN",
+                                          "Left EPN",
+                                          "Left Frontal",
+                                          "Right Frontal"),
+                            time_window_low = c(400,
+                                                250,
+                                                250,
+                                                1000,
+                                                1000),
+                            time_window_high = c(2000,
+                                                 400,
+                                                 400,
+                                                 2000,
+                                                 2000)),
+                       .f = erp_plot_fun_positive)
+# negative blocks
+plots_negative <- pmap(list(dat = list(eeg_df_mast,
+                                       eeg_df_avr,
+                                       eeg_df_avr,
+                                       eeg_df_mast,
+                                       eeg_df_mast),
+                            cluster = list(lpp_elec,
+                                           epn_elec_right,
+                                           epn_elec_left,
+                                           front_left,
+                                           front_right),
+                            comp_name = c("LPP",
+                                          "Right EPN",
+                                          "Left EPN",
+                                          "Left Frontal",
+                                          "Right Frontal"),
+                            time_window_low = c(400,
+                                                250,
+                                                250,
+                                                1000,
+                                                1000),
+                            time_window_high = c(2000,
+                                                 400,
+                                                 400,
+                                                 2000,
+                                                 2000)),
+                       .f = erp_plot_fun_negative)
 #'
 #' save images to workspace
 #+ save the images
-map2(plots, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
-  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, ".png")), device = "png", width = 8, height = 5, scale = 1.5)
+# all
+map2(plots_all, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, "_all.png")), device = "png", width = 8, height = 5, scale = 1.5)
+})
+# passive blocks
+map2(plots_passive, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, "_passive.png")), device = "png", width = 8, height = 5, scale = 1.5)
+})
+# positive blocks
+map2(plots_positive, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, "_positive.png")), device = "png", width = 8, height = 5, scale = 1.5)
+})
+# negative blocks
+map2(plots_negative, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
+  ggsave(plot = .x, filename = here("Images", "average_waveforms", paste0(.y, "_negative.png")), device = "png", width = 8, height = 5, scale = 1.5)
 })
