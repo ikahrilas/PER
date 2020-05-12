@@ -42,7 +42,7 @@ measures_int <- per_questionnaires %>%
 
 LPP <- erp_mast_wide %>%
   select(all_of(lpp_elec), pid:prop_trials) %>% 
-  filter(between(ms, 400, 1000)) %>%
+  filter(between(ms, 425, 1000)) %>%
   pivot_longer(., cols = all_of(lpp_elec), names_to = "electrode", values_to = "mv") %>% 
   group_by(pid, block) %>% 
   summarize(LPP = mean(mv, na.rm = TRUE),
@@ -133,21 +133,47 @@ per_erp %>%
             front_right_sd = sd(front_right, na.rm = TRUE),
             front_left_mean = mean(front_left, na.rm = TRUE),
             front_left_sd = sd(front_left, na.rm = TRUE))
-
-glimpse(per_erp)
 ```
 
-# Normality Tests
+## Behavioral Rating Descriptive Statistics by Block
 
-## Positive Affectivity
+# Exploration of Questionnaire Data
 
-```{r PA histogram}
-per_erp %>% 
+```{r histograms and qqplots, message = FALSE, warning = FALSE}
+meas_by_pid <- per_erp %>% 
   group_by(pid) %>% 
-  summarize(pos_affectivity = mean(pos_affectivity, na.rm = TRUE)) %>% 
-  ggplot(., (aes(pos_affectivity))) +
-    geom_histogram(bins = 15) +
-    ggtitle("PA Histogram")
+  summarize(anticipating = mean(anticipating, na.rm = TRUE),
+            savoring_moment = mean(savoring_moment, na.rm = TRUE),
+            reminiscing = mean(reminiscing, na.rm = TRUE),
+            sbi_tot = mean(sbi_tot, na.rm = TRUE),
+            pos_affectivity = mean(pos_affectivity, na.rm = TRUE),
+            neg_affectivity = mean(neg_affectivity, na.rm = TRUE),
+            pos_affect = mean(pos_affect, na.rm = TRUE),
+            neg_affect = mean(neg_affect, na.rm = TRUE),
+            masq_pa = mean(masq_pa, na.rm = TRUE),
+            masq_na = mean(masq_na, na.rm = TRUE),
+            masq_aa = mean(masq_aa, na.rm = TRUE),
+            tmms_repair = mean(tmms_repair, na.rm = TRUE),
+            tmms_attention = mean(tmms_attention, na.rm = TRUE),
+            tmms_clarity = mean(tmms_clarity, na.rm = TRUE),
+            erq_reappraisal = mean(erq_reappraisal, na.rm = TRUE),
+            erq_suppression = mean(erq_suppression, na.rm = TRUE),
+            depression = mean(depression, na.rm = TRUE))
+
+measure_hist_qq_fun <- function(var, name) {
+hist <- meas_by_pid %>% 
+  gghistogram(., var)
+qq <- meas_by_pid %>% 
+  ggqqplot(., var)
+hist|qq + plot_annotation(title = name)
+}
+
+name <- c("Anticipating", "Savoring the Moment", "Reminiscing", "SBI Total", "Positive Affectivity",
+           "Negative Affectivity", "Positive Affect", "Negative Affect", "MASQ PA", "MASQ NA",
+           "MASQ AA", "TMMS Repair", "TMMS Attention", "TMMS Clarity", "ERQ Reappraisal",
+           "ERQ Suppression", "Depression")
+
+map2(names(meas_by_pid)[-1], name, ~ measure_hist_qq_fun(.x, .y))
 ```
 
 ```{r PA QQplot}
