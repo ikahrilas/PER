@@ -20,30 +20,40 @@ Create a vectors with .mul and .evt names
 
 ```{r file names}
 # vector of all files in working directory partitioned by avg montage and evt files
-files_mast <- list.files(here("data", "mast_export"))
-files_avg <- list.files(here("data", "avr_export"))
+files_mast_hp <- list.files(here("data", "mast_hp"))
+files_avg_hp <- list.files(here("data", "avr_hp"))
+files_mast_no_hp <- list.files(here("data", "mast_no_hp"))
+files_avg_no_hp <- list.files(here("data", "avr_no_hp"))
 files_evt <- list.files(here("data", "mast_evt"))
 # remove 206201831 and 206201831b, as these files will have to be handled separately
 rem_case <- function(string) {
 string[-(str_which(string, "206201831"))]
 }
-split_case_mast <- str_subset(files_mast, "206201831")
-split_case_avr <- str_subset(files_avg, "206201831")
+split_case_mast_hp <- str_subset(files_mast_hp, "206201831")
+split_case_mast_no_hp <- str_subset(files_mast_hp, "206201831")
+split_case_avr_hp <- str_subset(files_avg_hp, "206201831")
+split_case_avr_no_hp <- str_subset(files_avg_no_hp, "206201831")
 split_case_evt <- str_subset(files_evt, "206201831")
 
-lst <- map(list(files_mast,
-           files_avg, 
-           files_evt), ~ rem_case(.x))
+lst <- map(list(files_mast_hp,
+                files_mast_no_hp,
+                files_avg_hp,
+                files_avg_no_hp,
+                files_evt), ~ rem_case(.x))
 # assign new character vectors back to variables
-files_mast <- lst[[1]]
-files_avg <- lst[[2]]
-files_evt <- lst[[3]]
+files_mast_hp <- lst[[1]]
+files_mast_no_hp <- lst[[2]]
+files_avg_hp <- lst[[3]]
+files_avg_no_hp <- lst[[4]]
+files_evt <- lst[[5]]
 ```
 Read in .mul and .evt files
 ```{r read in .evt files, warning = FALSE, message = FALSE}
 #preallocate space
-mastoid <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
-avg <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
+mastoid_hp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
+mastoid_no_hp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
+avg_hp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
+avg_no_hp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
 evt <- tibble(
   Tmu = rep(NA, times = 51*7),
   block = rep(NA, times = 51*7),
