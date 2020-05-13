@@ -20,40 +20,40 @@ Create a vectors with .mul and .evt names
 
 ```{r file names}
 # vector of all files in working directory partitioned by avg montage and evt files
-files_mast_hp <- list.files(here("data", "mast_hp"))
-files_avg_hp <- list.files(here("data", "avr_hp"))
-files_mast_no_hp <- list.files(here("data", "mast_no_hp"))
-files_avg_no_hp <- list.files(here("data", "avr_no_hp"))
+files_mast_lp <- list.files(here("data", "mast_lp"))
+files_avg_lp <- list.files(here("data", "avr_lp"))
+files_mast_no_lp <- list.files(here("data", "mast_no_lp"))
+files_avg_no_lp <- list.files(here("data", "avr_no_lp"))
 files_evt <- list.files(here("data", "mast_evt"))
 # remove 206201831 and 206201831b, as these files will have to be handled separately
 rem_case <- function(string) {
 string[-(str_which(string, "206201831"))]
 }
-split_case_mast_hp <- str_subset(files_mast_hp, "206201831")
-split_case_mast_no_hp <- str_subset(files_mast_hp, "206201831")
-split_case_avr_hp <- str_subset(files_avg_hp, "206201831")
-split_case_avr_no_hp <- str_subset(files_avg_no_hp, "206201831")
+split_case_mast_lp <- str_subset(files_mast_lp, "206201831")
+split_case_mast_no_lp <- str_subset(files_mast_lp, "206201831")
+split_case_avr_lp <- str_subset(files_avg_lp, "206201831")
+split_case_avr_no_lp <- str_subset(files_avg_no_lp, "206201831")
 split_case_evt <- str_subset(files_evt, "206201831")
 
-lst <- map(list(files_mast_hp,
-                files_mast_no_hp,
-                files_avg_hp,
-                files_avg_no_hp,
+lst <- map(list(files_mast_lp,
+                files_mast_no_lp,
+                files_avg_lp,
+                files_avg_no_lp,
                 files_evt), ~ rem_case(.x))
 # assign new character vectors back to variables
-files_mast_hp <- lst[[1]]
-files_mast_no_hp <- lst[[2]]
-files_avg_hp <- lst[[3]]
-files_avg_no_hp <- lst[[4]]
+files_mast_lp <- lst[[1]]
+files_mast_no_lp <- lst[[2]]
+files_avg_lp <- lst[[3]]
+files_avg_no_lp <- lst[[4]]
 files_evt <- lst[[5]]
 ```
 Read in .mul and .evt files
 ```{r read in .evt files, warning = FALSE, message = FALSE}
 #preallocate space
-mastoid_hp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
-mastoid_no_hp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
-avg_hp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
-avg_no_hp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
+mastoid_lp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
+mastoid_no_lp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 80))
+avg_lp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
+avg_no_lp <- as_tibble(matrix(data = NA_real_, nrow = 580454, ncol = 69))
 evt <- tibble(
   Tmu = rep(NA, times = 51*7),
   block = rep(NA, times = 51*7),
@@ -82,7 +82,18 @@ evt <- map_df(files_evt, ~{
 })
 
 # this reads all mastoid-referenced files into a list and generates pid, block, and ms variables
-mastoid <- map_df(here("data", "mast_export", files_mast), ~ {
+mastoid_lp <- map_df(here("data", "mast_lp", files_mast_lp), ~ {
+  read_table2(.x, skip = 1) %>%
+  mutate(
+    pid = as.numeric(str_extract(.x, "[0-9]{7,}")),
+    block = rep(block_names, each = nrow(.) / 7),
+    ms = rep(seq(from = -200, to = 3000, 
+                   by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
+               times = 7),
+    )
+  }
+  )
+mastoid_no_lp <- map_df(here("data", "mast_no_lp", files_mast_no_lp), ~ {
   read_table2(.x, skip = 1) %>%
   mutate(
     pid = as.numeric(str_extract(.x, "[0-9]{7,}")),
@@ -94,9 +105,20 @@ mastoid <- map_df(here("data", "mast_export", files_mast), ~ {
   }
   )
 # drop extraneous columns
-mastoid <- mastoid %>% select(-c(E67:X74, X71:X72))
+mastoid_lp <- mastoid_lp %>% select(-c(E67:X74, X71:X72))
+mastoid_no_lp <- mastoid_no_lp %>% select(-c(E67:X74, X71:X72))
 # this reads all average-referenced files into a list and generates, pid, block, and ms variables
-avg <- map_df(here("data", "avr_export", files_avg), ~ {
+avg_lp <- map_df(here("data", "avr_lp", files_avg_lp), ~ {
+  read_table2(.x, skip = 1) %>%
+  mutate(
+    pid = as.numeric(str_extract(.x, "[0-9]{7,}")),
+    block = rep(block_names, each = nrow(.) / 7),
+    ms = rep(seq(from = -200, to = 3000, 
+                   by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
+               times = 7))
+  }
+  )
+avg_no_lp <- map_df(here("data", "avr_no_lp", files_avg_no_lp), ~ {
   read_table2(.x, skip = 1) %>%
   mutate(
     pid = as.numeric(str_extract(.x, "[0-9]{7,}")),
@@ -112,27 +134,48 @@ Merge split case with rest of the data
 
 ```{r take care of split case}
 # mastoid reference
-split_case_mr <- bind_rows(read_table2(here("data", "mast_export", split_case_mast[1]), skip = 1), read_table2(here("data", "mast_export", split_case_mast[2]), skip = 1)) %>% 
+split_case_mr_lp <- bind_rows(read_table2(here("data", "mast_lp", split_case_mast_lp[1]), skip = 1), read_table2(here("data", "mast_lp", split_case_mast_lp[2]), skip = 1)) %>% 
   mutate(
-    pid = as.numeric(str_extract(split_case_mast[1], "[0-9]{7,}")),
+    pid = as.numeric(str_extract(split_case_mast_lp[1], "[0-9]{7,}")),
     block = rep(block_names, each = nrow(.) / 7),
     ms = rep(seq(from = -200, to = 3000, 
                    by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
                times = 7)) %>% 
   select(-c(E67:X74))
 
-mastoid <- bind_rows(mastoid, split_case_mr)
+mastoid_lp <- bind_rows(mastoid_lp, split_case_mr_lp)
+
+split_case_mr_no_lp <- bind_rows(read_table2(here("data", "mast_no_lp", split_case_mast_no_lp[1]), skip = 1), read_table2(here("data", "mast_no_lp", split_case_mast_no_lp[2]), skip = 1)) %>% 
+  mutate(
+    pid = as.numeric(str_extract(split_case_mast_no_lp[1], "[0-9]{7,}")),
+    block = rep(block_names, each = nrow(.) / 7),
+    ms = rep(seq(from = -200, to = 3000, 
+                   by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
+               times = 7)) %>% 
+  select(-c(E67:X74))
+
+mastoid_no_lp <- bind_rows(mastoid_no_lp, split_case_mr_no_lp)
 
 # average reference
-split_case_ar <- bind_rows(read_table2(here("data", "avr_export", split_case_avr[1]), skip = 1), read_table2(here("data", "avr_export", split_case_avr[2]), skip = 1)) %>% 
+split_case_ar_lp <- bind_rows(read_table2(here("data", "avr_lp", split_case_avr_lp[1]), skip = 1), read_table2(here("data", "avr_lp", split_case_avr_lp[2]), skip = 1)) %>% 
   mutate(
-    pid = as.numeric(str_extract(split_case_avr[1], "[0-9]{7,}")),
+    pid = as.numeric(str_extract(split_case_avr_lp[1], "[0-9]{7,}")),
     block = rep(block_names, each = nrow(.) / 7),
     ms = rep(seq(from = -200, to = 3000, 
                    by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
                times = 7))
 
-avg <- bind_rows(avg, split_case_ar)
+avg_lp <- bind_rows(avg_lp, split_case_ar_lp)
+
+split_case_ar_no_lp <- bind_rows(read_table2(here("data", "avr_no_lp", split_case_avr_no_lp[1]), skip = 1), read_table2(here("data", "avr_no_lp", split_case_avr_no_lp[2]), skip = 1)) %>% 
+  mutate(
+    pid = as.numeric(str_extract(split_case_avr_no_lp[1], "[0-9]{7,}")),
+    block = rep(block_names, each = nrow(.) / 7),
+    ms = rep(seq(from = -200, to = 3000, 
+                   by = ((3200 + (3200 / (nrow(.)/7))) / (nrow(.)/7))),
+               times = 7))
+
+avg_no_lp <- bind_rows(avg_no_lp, split_case_ar_no_lp)
 
 # evt data
 split_case_evt <- bind_rows(read_table(here("data", "mast_evt", split_case_evt[1])),
@@ -153,24 +196,36 @@ evt <- bind_rows(evt, split_case_evt)
 
 ```{r clean up variable/condition names}
 # clean up electrode names
-names(avg) <- gsub("_.*", "", names(avg))
-names(mastoid) <- gsub("_.*", "", names(mastoid))
+names(avg_lp) <- gsub("_.*", "", names(avg_lp))
+names(avg_no_lp) <- gsub("_.*", "", names(avg_no_lp))
+names(mastoid_lp) <- gsub("_.*", "", names(mastoid_lp))
+names(mastoid_no_lp) <- gsub("_.*", "", names(mastoid_no_lp))
 ```
 
 ```{r merge mul and evt dataframes}
 # preallocate space
-erp_mast <- as_tibble(matrix(data = NA_real_, nrow = nrow(mastoid), ncol = ncol(mastoid) + ncol(evt)))
-erp_avr <- as_tibble(matrix(data = NA_real_, nrow = nrow(avg), ncol = ncol(avg) + ncol(evt)))
+erp_mast_lp <- as_tibble(matrix(data = NA_real_, nrow = nrow(mastoid_lp), ncol = ncol(mastoid_lp) + ncol(evt)))
+erp_mast_no_lp <- as_tibble(matrix(data = NA_real_, nrow = nrow(mastoid_no_lp), ncol = ncol(mastoid_no_lp) + ncol(evt)))
+erp_avr_lp <- as_tibble(matrix(data = NA_real_, nrow = nrow(avg_lp), ncol = ncol(avg_lp) + ncol(evt)))
+erp_avr_no_lp <- as_tibble(matrix(data = NA_real_, nrow = nrow(avg_no_lp), ncol = ncol(avg_no_lp) + ncol(evt)))
 # merge
-erp_mast <- inner_join(mastoid, evt, by = c("pid", "block"))
-erp_avr <- inner_join(avg, evt, by = c("pid", "block"))
+erp_mast_lp <- inner_join(mastoid_lp, evt, by = c("pid", "block"))
+erp_mast_no_lp <- inner_join(mastoid_no_lp, evt, by = c("pid", "block"))
+erp_avr_lp <- inner_join(avg_lp, evt, by = c("pid", "block"))
+erp_avr_no_lp <- inner_join(avg_no_lp, evt, by = c("pid", "block"))
 # fix incorrect pid
-erp_mast$pid[erp_mast$pid == 201206832] <- 206201832
-erp_avr$pid[erp_avr$pid == 201206832] <- 206201832
+erp_mast_lp$pid[erp_mast_lp$pid == 201206832] <- 206201832
+erp_mast_no_lp$pid[erp_mast_no_lp$pid == 201206832] <- 206201832
+erp_avr_lp$pid[erp_avr_lp$pid == 201206832] <- 206201832
+erp_avr_no_lp$pid[erp_avr_no_lp$pid == 201206832] <- 206201832
 # set pid as character class
-erp_mast$pid <- as.character(erp_mast$pid)
-erp_avr$pid <- as.character(erp_avr$pid)
+erp_mast_lp$pid <- as.character(erp_mast_lp$pid)
+erp_mast_no_lp$pid <- as.character(erp_mast_no_lp$pid)
+erp_avr_lp$pid <- as.character(erp_avr_lp$pid)
+erp_avr_no_lp$pid <- as.character(erp_avr_no_lp$pid)
 # write files
-write_csv(erp_mast, here("data", "created_data", "erp_mast.csv"))
-write_csv(erp_avr, here("data", "created_data", "erp_avr.csv"))
+write_csv(erp_mast_lp, here("data", "created_data", "erp_mast_lp.csv"))
+write_csv(erp_mast_no_lp, here("data", "created_data", "erp_mast_no_lp.csv"))
+write_csv(erp_avr_lp, here("data", "created_data", "erp_avr_lp.csv"))
+write_csv(erp_avr_no_lp, here("data", "created_data", "erp_avr_no_lp.csv"))
 ```
