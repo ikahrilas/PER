@@ -1,5 +1,5 @@
 ---
-title: "Exploratory Data Analyses for PER Project"
+title: "Univariate EDA for PER Project"
 author: "Ian Kahrilas"
 date: "2/10/2020"
 output:
