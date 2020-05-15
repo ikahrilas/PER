@@ -8,8 +8,8 @@ output: pdf_document
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
+library(lmerTest)
 library(here)
-library(pander)
 library(ggpubr)
 library(car)
 library(emmeans)
@@ -21,36 +21,77 @@ library(patchwork)
 library(report)
 library(r2glmm)
 # load in data
-erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast_no_lp.csv"))
-erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr_no_lp.csv"))
-per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
+per_dat <- read_csv(here("data", "created_data", "per_data_analyses_2020_5_15.csv"))
+```
+
+# Characterizing relationship between block conditions and EEG components
+
+## Passive conditions and LPP
+
+```{r LPP by passive block, warning=FALSE, message=FALSE}
+# box and whisker plots for LPP
+per_dat %>% 
+  filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")) %>% 
+  mutate(block = fct_relevel(block, c("Neg_Watch", 
+                                      "Neu_Watch",
+                                      "Pos_Watch"))) %>% # Change block order
+  ggplot(., aes(block, LPP)) +
+  geom_boxplot() + 
+  ggtitle("LPP box and whisker plots for passive blocks")
+
+per_dat$block <- relevel(as.factor(per_dat$block), "Neu_Watch")
+passive_lpp_mod <- lmer(LPP ~ block + (1|pid), data = per_dat %>% filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")))
+# check the quality of the model
+check_model(passive_lpp_mod, panel = FALSE)
+summary(passive_lpp_mod)
+r2beta(passive_lpp_mod)
+```
+
+There are significant differences in LPP for each passive block
+
+## Passive conditions and late LPP
+
+```{r late LPP and passive blocks}
+# box and whisker plots for late LPP and passive blocks
+per_dat %>% 
+  filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")) %>% 
+  mutate(block = fct_relevel(block, c("Neg_Watch",
+                                      "Neu_Watch",
+                                      "Pos_Watch"))) %>% # Change block order
+  ggplot(., aes(block, LPP_late)) +
+  geom_boxplot() + 
+  ggtitle("Late LPP box and whisker plots for each block")
+
+passive_late_lpp_mod <- lmer(LPP_late ~ block + (1|pid), data = per_dat %>% filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")))
+# check the quality of the model
+check_model(passive_late_lpp_mod, panel = FALSE)
+summary(passive_late_lpp_mod)
+r2beta(passive_late_lpp_mod)
 ```
 
 
-# Aim One Analyses
 
-## Characterizing relationship between block conditions and EEG components
+```{r}
+# create dataset with lateralization variable
+tmp <- per_dat %>% 
+  pivot_longer(c("EPN_left", "EPN_right"), names_to = "lateralization", names_prefix = "EPN_", values_to = "EPN") %>% 
+  select(-c(front_right, front_left))
+tmp2 <- per_dat %>% 
+  pivot_longer(c("front_left", "front_right"), names_to = "lateralization", names_prefix = "front_", values_to = "frontal") %>% 
+  select(pid, block, frontal, lateralization)
+per_dat_lat <- left_join(tmp, tmp2, by = c("pid", "block", "lateralization")) %>% 
+  select(pid:LPP_late, EPN, frontal, lateralization, everything())
 
-```{r visualize LPP by block, warning=FALSE, message=FALSE}
-per_erp_filter_lat <- read_csv(here("data", "created_data", "per_data_for_analyses.csv"))
-per_erp_rev <- read_csv(here("data", "created_data", "per_data_lpp_rev_for_analyses.csv"))
-# box and whisker plots ### AVG == midline
-per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right")), # lateralization order
-         block = fct_relevel(block, c("Neg_Inc", "Neg_Watch", "Neg_Dec",
-                                      "Neu_Watch",
-                                      "Pos_Dec", "Pos_Watch", "Pos_Inc"))) %>% # Change block order
-  ggplot(., aes(block, LPP, color = lateralization)) +
-  geom_boxplot() + 
-  ggtitle("LPP box and whisker plots for each block")
-per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right")), # lateralization order
+# box and whisker plots for EPN
+per_dat_lat %>% 
+  mutate(lateralization = fct_relevel(lateralization, c("left", "right")), # lateralization order
          block = fct_relevel(block, c("Neg_Inc", "Neg_Watch", "Neg_Dec",
                                       "Neu_Watch",
                                       "Pos_Dec", "Pos_Watch", "Pos_Inc"))) %>% # Change block order 
   ggplot(., aes(block, EPN, color = lateralization)) +
   geom_boxplot() +
   ggtitle("EPN box and whisker plots for each block")
+
 per_erp_rev %>% 
   ggplot(., aes(block, LPP)) + 
   geom_boxplot() + 
@@ -65,6 +106,8 @@ per_erp_filter_lat %>%
   geom_boxplot() +
   ggtitle("Frontal component box and whisker plots for each block") # omit midline condition
 ```
+
+
 
 ## Contrasts between conditions
 
