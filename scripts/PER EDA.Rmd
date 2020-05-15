@@ -10,11 +10,9 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(here)
-library(bootmlm)
 library(pander)
 library(ggpubr)
 library(car)
-library(robustlmm)
 library(emmeans)
 library(easystats)
 library(welchADF)
@@ -24,8 +22,8 @@ library(patchwork)
 library(report)
 library(r2glmm)
 # load in data
-erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast.csv"))
-erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr.csv"))
+erp_mast_wide <- read_csv(here("data", "created_data", "erp_mast_no_lp.csv"))
+erp_avr_wide <- read_csv(here("data", "created_data", "erp_avr_no_lp.csv"))
 per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```
 
@@ -148,7 +146,6 @@ per_erp %>%
             difficulty_sd = sd(difficulty, na.rm = TRUE))
 ```
 
-
 # Exploration of Questionnaire Data
 
 ```{r histograms and qqplots, message = FALSE, warning = FALSE}
@@ -188,248 +185,55 @@ name <- c("Anticipating", "Savoring the Moment", "Reminiscing", "SBI Total", "Po
 map2(names(meas_by_pid)[-1], name, ~ measure_hist_qq_fun(.x, .y))
 ```
 
-## LPP
-
-### Histograms and QQplots for each block
+## Histograms and QQplots for each block with EEG Components
 
 ```{r histograms and qqplots for LPP and EPN for each block, warning = FALSE, message = FALSE}
-eeg_by_pid <- per_erp %>% 
-  group_by(pid, block) %>% 
-  summarize(LPP_right = mean(LPP_right, na.rm = TRUE),
-            LPP_left = mean(LPP_left, na.rm = TRUE),
-            EPN_right = mean(EPN_right, na.rm = TRUE),
-            EPN_left = mean(EPN_left, na.rm = TRUE),
-            front_left_avr = mean(front_left_avr, na.rm = TRUE),
-            front_right_avr = mean(front_right_avr, na.rm = TRUE),
-            front_left_mast = mean(front_left_mast, na.rm = TRUE),
-            front_right_mast = mean(front_right_mast, na.rm = TRUE))
-
 hist_qq_fun <- function(trial, component) {
-(eeg_by_pid %>% 
+(per_erp %>% 
   filter(block == trial) %>% 
   select(component) %>% 
   gghistogram(., x = component) |
-eeg_by_pid %>% 
+per_erp %>% 
   filter(block == trial) %>% 
   select(component) %>% 
   ggqqplot(., component)) +
   plot_annotation(title = paste(trial, component))
 }
+eeg_by_pid
+blocks <- unique(as.character(per_erp$block))
+components <- names(per_erp)[4:9]
 
-blocks <- unique(as.character(eeg_by_pid$block))
-components <- names(eeg_by_pid)[3:10]
+map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
+```
+ 
+Omit extreme cases indicated in the histograms and QQ plots, and regenerate histograms and QQ plots.
+
+```{r examine extreme cases, warning=FALSE,message=FALSE}
+per_erp$LPP[per_erp$block == "Neg_Watch" & per_erp$LPP > 20] <- NA
+per_erp$LPP[per_erp$block == "Pos_Watch" & per_erp$LPP < -5] <- NA
+per_erp$LPP_late[per_erp$block == "Neg_Watch" & per_erp$LPP_late > 20] <- NA
 
 map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 ```
 
-for revised lpp electrode selection
+## Histograms and QQplots for each block with behavioral ratings
 
-```{r lpp rev selection, message=FALSE, warning=FALSE}
-eeg_by_pid_rev <- per_erp_rev %>% 
-  group_by(pid, block) %>% 
-  summarize(LPP = mean(LPP, na.rm = TRUE))
-norm_rev_fun <- function(trial) {
-(eeg_by_pid_rev %>% 
+```{r hist and qq with behavioral ratings, echo = FALSE, message = FALSE, warning = FALSE}
+hist_qq_fun <- function(trial, rating) {
+(per_erp %>% 
   filter(block == trial) %>% 
-  gghistogram(., x = "LPP") |
-eeg_by_pid_rev %>% 
+  select(rating) %>% 
+  gghistogram(., x = rating, bins = 8) |
+per_erp %>% 
   filter(block == trial) %>% 
-  ggqqplot(., "LPP")) +
-  plot_annotation(title = paste(trial, "LPP"))
+  select(rating) %>% 
+  ggqqplot(., rating)) +
+  plot_annotation(title = paste(c(trial, rating)))
 }
-blocks <- unique(as.character(eeg_by_pid_rev$block))
-map(blocks, ~ norm_rev_fun(.x))
-```
- 
-Inspect some of the extreme cases indicated in the histograms.
+blocks <- unique(as.character(per_erp$block))
+ratings <- names(per_erp)[10:12]
 
-```{r examine extreme cases, warning=FALSE,message=FALSE}
-# character string of outlier pids
-outlier_pids <- unique(c(eeg_by_pid %>% 
-                           filter(block == "Neg_Dec", LPP_right < -10) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Neu_Watch", LPP_right < -9, LPP_right > 10) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Pos_Inc", LPP_right < -9) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Neu_Watch", LPP_left > 10) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Neg_Dec", EPN_right < -20, front_right_avr < -5.0,
-                                  front_right_mast < -4.7) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Pos_Dec", EPN_right < -20, front_right_avr > 4.1) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Pos_Inc", EPN_right < -20) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Neu_Watch", EPN_left > 15) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Neg_Watch", front_right_avr < -4) %>% 
-                           select(pid) %>% 
-                           pull(),
-                         eeg_by_pid %>% 
-                           filter(block == "Neg_Inc", front_right_avr < -4)))
-                  
-# inspect cases
-eeg_by_pid %>% 
-  filter(pid %in% outlier_pids)
-
-# make duplicate data frame with extreme values replaced with NA
-eeg_by_pid_filter <- eeg_by_pid
-
-eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right > 10] <- NA
-eeg_by_pid_filter$LPP_right[eeg_by_pid_filter$LPP_right < -9] <- NA
-eeg_by_pid_filter$LPP_left[eeg_by_pid_filter$LPP_left > 12] <- NA
-eeg_by_pid_filter$EPN_right[eeg_by_pid_filter$EPN_right < -20] <- NA
-eeg_by_pid_filter$EPN_left[eeg_by_pid_filter$EPN_left > 15] <- NA
-eeg_by_pid_filter$front_left_avr[eeg_by_pid_filter$front_left_avr < -5] <- NA
-eeg_by_pid_filter$front_left_avr[eeg_by_pid_filter$front_left_avr > 4.5] <- NA
-eeg_by_pid_filter$front_right_avr[eeg_by_pid_filter$front_right_avr < -4] <- NA
-eeg_by_pid_filter$front_right_avr[eeg_by_pid_filter$front_right_avr > 4.1] <- NA
-eeg_by_pid_filter$front_right_mast[eeg_by_pid_filter$front_right_mast < -4.7] <- NA
-
-# same for rev group
-outlier_pid_rev <- eeg_by_pid_rev %>% 
-  filter(block == "Neu_Watch", LPP > 10 | LPP < -8) %>% 
-  select(pid) %>% 
-  pull()
-
-eeg_by_pid_rev %>% 
-  filter(pid %in% outlier_pid_rev)
-
-eeg_by_pid_rev$LPP[eeg_by_pid_rev$LPP > 10 | eeg_by_pid_rev$LPP < -8] <- NA
-```
-
-Our extreme cases are `outlier_pids`. Re-run histograms and QQ plots with the extreme datapoints omitted. 
-
-```{r remove noisy participants, warning=FALSE, message=FALSE}
-hist_qq_fun_filter <- function(trial, component) {
-(eeg_by_pid_filter %>% 
-  filter(block == trial) %>% 
-  select(component) %>% 
-  gghistogram(., x = component) |
-eeg_by_pid_filter %>% 
-  filter(block == trial) %>% 
-  select(component) %>% 
-  ggqqplot(., component)) +
-  plot_annotation(title = paste(trial, component))
-}
-
-map(components, ~map(blocks, ~hist_qq_fun_filter(trial = .x, component = .y), .y = .x))
-```
-
-and also with revised lpp
-
-```{r, warning=FALSE, message=FALSE}
-map(blocks, ~ norm_rev_fun(.x))
-```
- 
-Create second dataset with outliers omitted. Create average LPP and EPN variables as well as variable indicating lateralization
-
-```{r manipulate the dataset to facilitate bivariate analyses}
-# construct a second data frame without the outlier datapoints
-per_erp_filter <- per_erp
-per_erp_filter$LPP_right[per_erp_filter$LPP_right > 10] <- NA
-per_erp_filter$LPP_right[per_erp_filter$LPP_right < -9] <- NA
-per_erp_filter$LPP_left[per_erp_filter$LPP_left > 12] <- NA
-per_erp_filter$EPN_right[per_erp_filter$EPN_right < -20] <- NA
-per_erp_filter$EPN_left[per_erp_filter$EPN_left > 15] <- NA
-per_erp_filter$front_left_avr[per_erp_filter$front_left_avr < -5] <- NA
-per_erp_filter$front_left_avr[per_erp_filter$front_left_avr > 4.5] <- NA
-per_erp_filter$front_right_avr[per_erp_filter$front_right_avr < -4] <- NA
-per_erp_filter$front_right_avr[per_erp_filter$front_right_avr > 4.1] <- NA
-per_erp_filter$front_right_mast[per_erp_filter$front_right_mast < -4.7] <- NA
-# for rev LPP as well
-per_erp_rev$LPP[per_erp_rev$LPP > 12 | per_erp_rev$LPP < -10] <- NA
-# average eeg components
-per_erp <- per_erp %>% 
-  mutate(LPP_avg = (LPP_right + LPP_left) / 2,
-         EPN_avg = (EPN_right + EPN_left) / 2,
-         front_avg_avr = (front_left_avr + front_right_avr) / 2,
-         front_avg_mast = (front_left_mast + front_right_mast) / 2)
-per_erp_filter <- per_erp_filter %>% 
-  mutate(LPP_avg = (LPP_right + LPP_left) / 2,
-         EPN_avg = (EPN_right + EPN_left) / 2,
-         front_avg_avr = (front_left_avr + front_right_avr) / 2,
-         front_avg_mast = (front_left_mast + front_right_mast) / 2)
-# create side variable for lateralization in both data sets
-tmp_LPP <- per_erp %>% 
-  select(-contains(c("EPN_", "front_"))) %>% 
-  pivot_longer(c(LPP_right, LPP_left, LPP_avg), names_to = "lateralization", values_to = "LPP") %>% 
-  mutate(lateralization = str_remove(lateralization, "LPP_")) %>% 
-  mutate(lateralization = as.factor(lateralization))
-tmp_EPN <- per_erp %>% 
-  select(-contains(c("LPP_", "front_"))) %>% 
-  pivot_longer(c(EPN_right, EPN_left, EPN_avg), names_to = "lateralization", values_to = "EPN") %>% 
-  mutate(lateralization = str_remove(lateralization, "EPN_")) %>% 
-  mutate(lateralization = as.factor(lateralization)) %>% 
-  select(pid, block, EPN, lateralization)
-tmp_front_avr <- per_erp %>% 
-  select(-contains(c("LPP_", "EPN_"))) %>% 
-  pivot_longer(c(front_right_avr, front_left_avr, front_avg_avr), names_to = "lateralization", values_to = "front_avr") %>% 
-  mutate(lateralization = str_remove(lateralization, "front_")) %>% 
-  mutate(lateralization = str_remove(lateralization, "_avr")) %>% 
-  mutate(lateralization = as.factor(lateralization)) %>% 
-  select(pid, block, front_avr, lateralization)
-tmp_front_mast <- per_erp %>% 
-  select(-contains(c("LPP_", "EPN_"))) %>% 
-  pivot_longer(c(front_right_mast, front_left_mast, front_avg_mast), names_to = "lateralization", values_to = "front_mast") %>% 
-  mutate(lateralization = str_remove(lateralization, "front_")) %>% 
-  mutate(lateralization = str_remove(lateralization, "_mast")) %>% 
-  mutate(lateralization = as.factor(lateralization)) %>% 
-  select(pid, block, front_mast, lateralization)
-per_erp_lat <- full_join(tmp_LPP, tmp_EPN, by = c("pid", "block", "lateralization")) %>%
-  full_join(tmp_front_avr, by = c("pid", "block", "lateralization")) %>% 
-  full_join(tmp_front_mast, by = c("pid", "block", "lateralization")) %>% 
-  select(pid, block, prop_trials, LPP, EPN, front_avr, front_mast, lateralization, everything())
-# filtered dataset
-tmp_LPP_filter <- per_erp_filter %>% 
-  select(-contains("EPN")) %>% 
-  pivot_longer(c(LPP_right, LPP_left, LPP_avg), names_to = "lateralization", values_to = "LPP") %>% 
-  mutate(lateralization = str_remove(lateralization, "LPP_")) %>% 
-  mutate(lateralization = as.factor(lateralization))
-tmp_EPN_filter <- per_erp_filter %>% 
-  select(-contains("LPP")) %>% 
-  pivot_longer(c(EPN_right, EPN_left, EPN_avg), names_to = "lateralization", values_to = "EPN") %>% 
-  mutate(lateralization = str_remove(lateralization, "EPN_")) %>% 
-  mutate(lateralization = as.factor(lateralization)) %>% 
-  select(pid, block, EPN, lateralization)
-tmp_front_avr_filter <- per_erp_filter %>% 
-  select(-contains(c("LPP_", "EPN_"))) %>% 
-  pivot_longer(c(front_right_avr, front_left_avr, front_avg_avr), names_to = "lateralization", values_to = "front_avr") %>% 
-  mutate(lateralization = str_remove(lateralization, "front_")) %>% 
-  mutate(lateralization = str_remove(lateralization, "_avr")) %>% 
-  mutate(lateralization = as.factor(lateralization)) %>% 
-  select(pid, block, front_avr, lateralization)
-tmp_front_mast_filter <- per_erp_filter %>% 
-  select(-contains(c("LPP_", "EPN_"))) %>% 
-  pivot_longer(c(front_right_mast, front_left_mast, front_avg_mast), names_to = "lateralization", values_to = "front_mast") %>% 
-  mutate(lateralization = str_remove(lateralization, "front_")) %>% 
-  mutate(lateralization = str_remove(lateralization, "_mast")) %>% 
-  mutate(lateralization = as.factor(lateralization)) %>% 
-  select(pid, block, front_mast, lateralization)
-per_erp_filter_lat <- full_join(tmp_LPP_filter, tmp_EPN_filter, by = c("pid", "block", "lateralization")) %>%
-  full_join(tmp_front_avr_filter, by = c("pid", "block", "lateralization")) %>% 
-  full_join(tmp_front_mast_filter, by = c("pid", "block", "lateralization")) %>% 
-  select(pid, block, prop_trials, LPP, EPN, front_avr, front_mast, lateralization, everything())
-# write dataset to file to be used elsewhere
-write_csv(per_erp_filter_lat, here("data", "created_data", "per_data_for_analyses.csv"))
-write_csv(per_erp_rev, here("data", "created_data", "per_data_lpp_rev_for_analyses.csv"))
+map(ratings, ~map(blocks, ~hist_qq_fun(trial = .x, rating = .y), .y = .x))
 ```
 
 # Bivariate Relationships
