@@ -13,8 +13,10 @@ library(patchwork)
 #'
 #' read in data
 #+ read in eeg data, incude = FALSE
-eeg_df_mast <- read_csv(here("data", "created_data", "erp_mast.csv"))
-eeg_df_avr <- read_csv(here("data", "created_data", "erp_avr.csv"))
+eeg_df_mast <- read_csv(here("data", "created_data", "erp_mast_no_lp.csv"))
+eeg_df_avr <- read_csv(here("data", "created_data", "erp_avr_no_lp.csv"))
+eeg_df_mast <- eeg_df_mast %>% filter(prop_trials > .50)
+eeg_df_avr <- eeg_df_avr %>% filter(prop_trials > .50)
 #'
 #' define clusters of electrodes and time windows for each component
 #+ electrode clusters and time windows
@@ -31,6 +33,7 @@ erp_plot_fun <- function(dat, cluster, comp_name, time_window_low, time_window_h
   dat %>%
     select(all_of(cluster),  block:prop_trials) %>%
     filter(ms < 2050) %>% 
+    #mutate(ms = round(ms, -0.8)) %>% 
     pivot_longer(., cols = cluster, names_to = "electrode", values_to = "mv") %>%
     group_by(block, ms) %>%
     summarize(mv = mean(mv, na.rm = TRUE)) %>%
@@ -66,6 +69,7 @@ erp_plot_fun_passive <- function(dat, cluster, comp_name, time_window_low, time_
     filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")) %>% 
     select(all_of(cluster),  block:prop_trials) %>%
     filter(ms < 2050) %>% 
+    #mutate(ms = round(ms, -0.8)) %>% 
     pivot_longer(., cols = cluster, names_to = "electrode", values_to = "mv") %>%
     group_by(block, ms) %>%
     summarize(mv = mean(mv, na.rm = TRUE)) %>%
@@ -97,6 +101,7 @@ erp_plot_fun_positive <- function(dat, cluster, comp_name, time_window_low, time
     filter(block %in% c("Pos_Dec", "Pos_Watch", "Pos_Inc")) %>% 
     select(all_of(cluster),  block:prop_trials) %>%
     filter(ms < 2050) %>% 
+    #mutate(ms = round(ms, -0.8)) %>% 
     pivot_longer(., cols = cluster, names_to = "electrode", values_to = "mv") %>%
     group_by(block, ms) %>%
     summarize(mv = mean(mv, na.rm = TRUE)) %>%
@@ -128,6 +133,7 @@ erp_plot_fun_negative <- function(dat, cluster, comp_name, time_window_low, time
     filter(block %in% c("Neg_Dec", "Neg_Watch", "Neg_Inc")) %>% 
     select(all_of(cluster),  block:prop_trials) %>%
     filter(ms < 2050) %>% 
+    #mutate(ms = round(ms, -0.8)) %>% 
     pivot_longer(., cols = cluster, names_to = "electrode", values_to = "mv") %>%
     group_by(block, ms) %>%
     summarize(mv = mean(mv, na.rm = TRUE)) %>%
@@ -282,4 +288,3 @@ map2(plots_positive, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_fr
 map2(plots_negative, c("LPP", "EPN_right", "EPN_left", "left_frontal", "right_frontal"), ~{
   ggsave(plot = .x, filename = here("Images", "average_waveforms", "negative_blocks", paste0(.y, "_negative.png")), device = "png", width = 8, height = 5, scale = 1.5)
 })
-
