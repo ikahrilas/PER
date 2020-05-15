@@ -69,7 +69,7 @@ summary(passive_late_lpp_mod)
 r2beta(passive_late_lpp_mod)
 ```
 
-
+## Passive conditions and EPN (right and left)
 
 ```{r}
 # create dataset with lateralization variable
@@ -84,13 +84,15 @@ per_dat_lat <- left_join(tmp, tmp2, by = c("pid", "block", "lateralization")) %>
 
 # box and whisker plots for EPN
 per_dat_lat %>% 
+  filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")) %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "right")), # lateralization order
-         block = fct_relevel(block, c("Neg_Inc", "Neg_Watch", "Neg_Dec",
+         block = fct_relevel(block, c("Neg_Watch",
                                       "Neu_Watch",
-                                      "Pos_Dec", "Pos_Watch", "Pos_Inc"))) %>% # Change block order 
+                                      "Pos_Watch"))) %>% # Change block order 
   ggplot(., aes(block, EPN, color = lateralization)) +
   geom_boxplot() +
   ggtitle("EPN box and whisker plots for each block")
+
 
 per_erp_rev %>% 
   ggplot(., aes(block, LPP)) + 
