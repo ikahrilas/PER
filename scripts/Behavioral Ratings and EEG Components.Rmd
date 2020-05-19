@@ -45,46 +45,49 @@ Scatterplot between EEG components and arousal ratings
 
 ```{r arousal ratings and LPP}
 # LPP
-per_erp_filter_lat %>% 
-ggplot(., aes(arousal, LPP, color = lateralization)) +
+per_dat %>% 
+ggplot(., aes(arousal, LPP)) +
   geom_jitter(width = 0.1, height = 0.1) +
   ggtitle("Arousal ratings and LPP") +
   geom_smooth(method = "lm", se = FALSE)
+
+mod_arousal_lpp <- lmer(LPP ~ arousal + (1|pid), data = per_dat)
+check_model(mod_arousal_lpp, panel = FALSE)
+summary(mod_arousal_lpp)
+```
+
+There is a significant relationship between LPP and arousal ratings
+
+
+```{r arousal ratings and EPN}
 # EPN
-per_erp_filter_lat %>% 
-  ggplot(., aes(arousal, EPN, color = lateralization)) +
+per_dat %>% 
+  ggplot(., aes(arousal, EPN)) +
   geom_jitter(width = 0.1, height = 0.1) +
   ggtitle("Arousal ratings and EPN") +
   geom_smooth(method = "lm", se = FALSE)
-# Centro-parietal LPP
-per_erp_rev %>% 
-  ggplot(., aes(arousal, LPP)) +
-  geom_jitter(width = 0.1, height = 0.1) +$
-  ggtitle("Arousal ratings and LPP") +
-  geom_smooth(method = "lm", se = FALSE)
-# frontal
-per_erp_filter_lat %>% 
-  filter(lateralization %in% c("right", "left")) %>% 
-  ggplot(., aes(arousal, front_avr, color = lateralization)) +
-  geom_jitter(width = 0.1, height = 0.1) +
-  ggtitle("Arousal ratings and frontal component") +
-  geom_smooth(method = "lm", se = FALSE)
-```
 
-There appears to be some positive relations. Let's test a linear model using MLM to account for the clustering between participants.
-
-```{r eeg predicted by arousal}
-mod_arousal_lpp <- lmerTest::lmer(LPP ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-summary(mod_arousal_lpp)
-mod_arousal_lpp_rev <- lmerTest::lmer(LPP ~ arousal + (1|pid), data = per_erp_rev)
-summary(mod_arousal_lpp_rev)
-mod_arousal_epn <- lmerTest::lmer(EPN ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+mod_arousal_epn <- lmer(EPN ~ arousal + (1|pid), data = per_dat)
+check_model(mod_arousal_epn, panel = FALSE)
 summary(mod_arousal_epn)
-right_frontal_arousal <- lmerTest::lmer(front_avr ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
-summary(right_frontal_arousal)
-left_frontal_arousal <- lmerTest::lmer(front_avr ~ arousal + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
-summary(left_frontal_arousal)
 ```
+  
+There is a significant relationship between EPN and arousal ratings
+
+```{r arousal ratings and N170}
+# N170
+per_dat %>% 
+  ggplot(., aes(arousal, N170)) +
+  geom_jitter(width = 0.1, height = 0.1) +
+  ggtitle("Arousal ratings and N170") +
+  geom_smooth(method = "lm", se = FALSE)
+
+mod_arousal_n170 <- lmer(N170 ~ arousal + (1|pid), data = per_dat)
+check_model(mod_arousal_n170, panel = FALSE)
+summary(mod_arousal_n170)
+```
+
+There is a significant relationship between arousal ratings and N170
 
 ## EEG and valence ratings
 
@@ -93,7 +96,6 @@ Scatterplot between LPP and valence ratings
 ```{r valence ratings and LPP, warning=FALSE, message=FALSE}
 # LPP
 per_erp_filter_lat %>% 
-  filter(lateralization %in% c("left", "right")) %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>% 
 ggplot(., aes(valence, LPP, color = lateralization)) +
   geom_jitter(width = 0.1, height = 0.1) + 
