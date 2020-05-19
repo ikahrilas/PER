@@ -156,44 +156,41 @@ ggplot(., aes(difficulty, LPP)) +
   geom_smooth(method = "lm", se = FALSE) +
   ggtitle("Difficulty ratings and LPP")
 
+lpp_diff <- lmer(LPP ~ difficulty + (1|pid), data = per_dat)
+check_model(lpp_diff, panel = FALSE)
+summary(lpp_diff)
+```
 
+There is a significant linear relationhip between LPP and difficulty ratings
 
-per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
-ggplot(., aes(difficulty, EPN, color = lateralization)) +
+## EPN and difficulty ratings
+
+```{r difficulty ratings and EPN}
+per_dat %>% 
+ggplot(., aes(difficulty, EPN)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(method = "lm", se = FALSE) +
   ggtitle("Difficulty ratings and EPN")
-per_erp_rev %>%
-ggplot(., aes(difficulty, LPP)) +
-  geom_jitter(width = 0.1, height = 0.1) + 
-  geom_smooth(method = "lm", se = FALSE) +
-  ggtitle("Difficulty ratings and centroparietal LPP")
-per_erp_filter_lat %>% 
-  filter(lateralization %in% c("left", "right")) %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>% 
-  ggplot(., aes(difficulty, front_avr, color = lateralization)) +
-  geom_jitter(width = 0.1, height = 0.1) + 
-  geom_smooth(method = "lm", se = FALSE) +
-  ggtitle("Difficulty ratings and frontal component")
+
+erp_diff <- lmer(EPN ~ difficulty + (1|pid), data = per_dat)
+summary(erp_diff)
 ```
 
-There may be a slight linear relationship, though it is weak. Let's try fitting a linear model to test this.
+There is a significant linear relationship between difficulty and EPN
 
-```{r, warning=FALSE, message=FALSE}
-mod_difficulty_lpp <- lmerTest::lmer(LPP ~ difficulty + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-check_model(mod_difficulty_lpp, panel = FALSE)
-summary(mod_difficulty_lpp)
-mod_difficulty_epn <- lmerTest::lmer(EPN ~ difficulty + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-summary(mod_difficulty_epn)
-mod_difficulty_lpp_rev <- lmerTest::lmer(LPP ~ difficulty + (1|pid), data = per_erp_rev)
-summary(mod_difficulty_lpp_rev)
-mod_difficulty_front_left <- lmerTest::lmer(front_avr ~ difficulty + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left")))
-summary(mod_difficulty_front_left)
-mod_difficulty_front_right <- lmerTest::lmer(front_avr ~ difficulty + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right")))
-summary(mod_difficulty_front_right)
-# there is an interaction with Positive increase and difficulty for the left frontal component.
+## N170 and difficulty ratings
+```{r difficulty ratings and N170}
+per_dat %>%
+ggplot(., aes(difficulty, N170)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Difficulty ratings and N170")
+
+n170_diff <- lmer(N170 ~ difficulty + (1|pid), data = per_dat)
+summary(n170_diff)
 ```
+
+There is a significant relationship between difficulty ratings and N170
 
 There does appear to be a positive relationship between the difficulty of the task and LPP.
 
