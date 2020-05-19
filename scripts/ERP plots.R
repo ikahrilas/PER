@@ -21,7 +21,7 @@ eeg_df_avr <- read_csv(here("data", "created_data", "erp_avr_no_lp.csv"))
 #' define clusters of electrodes and time windows for each component
 #+ electrode clusters and time windows
 # clusters
-lpp_elec <- c("A25", "B28", "B22") # look at 450 - 850 ms windows
+lpp_elec <- c("A25", "B28", "B22") # look at 450 - 800 ms windows
 epn_elec_right <- "B26" # 225 - 375 ms
 epn_elec_left <- "A27" # 225 - 375 ms
 epn_elec_avg <- c("A27", "B27")
@@ -33,9 +33,9 @@ N170_avg <- c("A27", "B27")
 #'
 #' Omit extreme cases as indicated by histograms and QQ plots in Univarite Exploration script
 #+ Omit exteme cases
-eeg_df_mast$A25[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 850)] <- NA
-eeg_df_mast$B28[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 850)] <- NA
-eeg_df_mast$B22[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 850)] <- NA
+eeg_df_mast$A25[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 800)] <- NA
+eeg_df_mast$B28[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 800)] <- NA
+eeg_df_mast$B22[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 800)] <- NA
 
 #' Create plots for each component with all conditions
 #+ plot creation
@@ -196,7 +196,7 @@ plots_all <- pmap(list(dat = list(eeg_df_mast,
                                        150,
                                        150,
                                        150),
-                   time_window_high = c(850,
+                   time_window_high = c(800,
                                         375,
                                         375,
                                         375,
@@ -233,7 +233,7 @@ plots_passive <- pmap(list(dat = list(eeg_df_mast,
                                                150,
                                                150,
                                                150),
-                           time_window_high = c(850,
+                           time_window_high = c(800,
                                                 375,
                                                 375,
                                                 375,
@@ -270,7 +270,7 @@ plots_positive <- pmap(list(dat = list(eeg_df_mast,
                                                 150,
                                                 150,
                                                 150),
-                            time_window_high = c(850,
+                            time_window_high = c(800,
                                                  375,
                                                  375,
                                                  375,
@@ -307,7 +307,7 @@ plots_negative <- pmap(list(dat = list(eeg_df_mast,
                                                 150,
                                                 150,
                                                 150),
-                            time_window_high = c(850,
+                            time_window_high = c(800,
                                                  375,
                                                  375,
                                                  375,
