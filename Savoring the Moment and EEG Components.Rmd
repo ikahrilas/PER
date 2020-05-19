@@ -45,7 +45,7 @@ per_dat <- per_dat %>%
 per_dat$block <-  relevel(factor(per_dat$block), "Pos_Watch")
 
 stm_lpp <- lmer(LPP ~ savoring_moment + (1|pid), data = per_dat)
-summary(stm_lpp)
+
 # savoring the moment is associated with LPP
 stm_lpp_mod <- lmer(LPP ~ scale(savoring_moment, center = TRUE, scale = FALSE) * block + (1|pid), per_dat)
 check_model(stm_lpp_mod, panel = FALSE)
@@ -53,6 +53,38 @@ summary(stm_lpp_mod)
 ```
 
 There is no interaction between savoring the moment and LPP
+
+## EPN and savoring the moment
+
+```{r}
+# relevel block variable
+per_dat$block <-  relevel(factor(per_dat$block), "Pos_Watch")
+
+stm_epn <- lmer(EPN ~ savoring_moment + (1|pid), data = per_dat)
+summary(stm_epn)
+# savoring the moment is associated with LPP
+stm_epn_mod <- lmer(EPN ~ scale(savoring_moment, center = TRUE, scale = FALSE) * block + (1|pid), per_dat)
+check_model(stm_epn_mod, panel = FALSE)
+summary(stm_epn_mod)
+```
+
+There is no interaction between epn and savoring the moment
+
+## N170 and savoring the moment
+
+```{r}
+# relevel block variable
+per_dat$block <-  relevel(factor(per_dat$block), "Pos_Watch")
+
+stm_n170 <- lmer(N170 ~ savoring_moment + (1|pid), data = per_dat)
+summary(stm_n170)
+# savoring the moment is not associated with N170
+stm_n170_mod <- lmer(N170 ~ scale(savoring_moment, center = TRUE, scale = FALSE) * block + (1|pid), per_dat)
+check_model(stm_n170_mod, panel = FALSE)
+summary(stm_n170_mod)
+```
+
+No interaction between savoring the moment and N170
 
 ## EEG and arousal ratings
 
