@@ -1,0 +1,82 @@
+---
+title: "Positive Affectivity and EEG Components"
+author: "Ian Kahrilas"
+date: "5/19/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lmerTest)
+library(here)
+library(ggpubr)
+library(car)
+library(emmeans)
+library(easystats)
+library(welchADF)
+library(moments)
+library(modelbased)
+library(patchwork)
+library(report)
+library(r2glmm)
+# load in data
+per_dat <- read_csv(here("data", "created_data", "per_data_analyses_2020_5_19.csv"))
+
+# create dataset with lateralization variable
+tmp <- per_dat %>% 
+  pivot_longer(c("EPN_left", "EPN_right"), names_to = "lateralization", names_prefix = "EPN_", values_to = "EPN") %>% 
+  select(-c(N170_right, N170_left))
+tmp2 <- per_dat %>% 
+  pivot_longer(c("N170_left", "N170_right"), names_to = "lateralization", names_prefix = "N170_", values_to = "N170") %>% 
+  select(pid, block, N170, lateralization)
+per_dat_lat <- left_join(tmp, tmp2, by = c("pid", "block", "lateralization")) %>% 
+  select(pid:LPP, EPN, N170, lateralization, everything())
+
+# create bilateral EPN and N170 variable to be used in initial analyses
+per_dat <- per_dat %>% 
+  mutate(N170 = (N170_left + N170_right) / 2,
+         EPN = (EPN_left + EPN_right) / 2) %>% 
+  select(pid:LPP, N170, EPN, everything())
+```
+
+## LPP and Positive Affectivity
+
+```{r pos affectivity contrasts, message=FALSE}
+per_dat$block <- relevel(factor(per_dat$block), "Neu_Watch")
+pa_lpp <- lmer(LPP ~ scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), per_dat)
+summary(pa_lpp)
+# pa is not associated with LPP
+pa_lpp_mod <- lmer(LPP ~ scale(pos_affectivity, center = TRUE, scale = FALSE) * block + (1|pid), per_dat)
+check_model(pa_lpp_mod, panel = FALSE)
+summary(pa_lpp_mod)
+```
+
+No interaction term between LPP and positive affectivity
+
+## EPN and Positive Affectivity
+
+```{r}
+per_dat$block <- relevel(factor(per_dat$block), "Neu_Watch")
+pa_epn <- lmer(EPN ~ scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), per_dat)
+summary(pa_epn)
+# pa is not associated with EPN
+pa_epn_mod <- lmer(EPN ~ scale(pos_affectivity, center = TRUE, scale = FALSE) * block + (1|pid), per_dat)
+check_model(pa_epn_mod, panel = FALSE)
+summary(pa_epn_mod)
+```
+
+No interaction term between EPN and positive affectivity
+
+## N170 and positive affectivity
+
+```{r}
+per_dat$block <- relevel(factor(per_dat$block), "Neu_Watch")
+pa_n170 <- lmer(N170 ~ scale(pos_affectivity, center = TRUE, scale = FALSE) + (1|pid), per_dat)
+summary(pa_n170)
+# pa is not associated with N170
+pa_n170_mod <- lmer(N170 ~ scale(pos_affectivity, center = TRUE, scale = FALSE) * block + (1|pid), per_dat)
+check_model(pa_n170_mod, panel = FALSE)
+summary(pa_n170_mod)
+```
+
+No interaction between N170 and positive affectivity
