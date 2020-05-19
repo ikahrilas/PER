@@ -100,8 +100,8 @@ per_erp <- left_join(LPP, EPN_right, by = c("pid", "block")) %>%
   left_join(EPN_left, by = c("pid", "block")) %>%
   left_join(N170_right, by = c("pid", "block")) %>%
   left_join(N170_left, by = c("pid", "block")) %>% 
-  left_join(front_right, by = c("pid", "block")) %>% 
-  left_join(front_left, by = c("pid", "block")) %>% 
+  # left_join(front_right, by = c("pid", "block")) %>% 
+  # left_join(front_left, by = c("pid", "block")) %>% 
   left_join(measures_int, by = c("pid", "block"))
 # change variable classes for parsimonious exploriation and analysis
 ## pid as character type
@@ -133,16 +133,14 @@ per_erp %>%
   group_by(block) %>% 
   summarize(LPP_mean = mean(LPP, na.rm = TRUE),
             LPP_sd = sd(LPP, na.rm = TRUE),
-            LPP_late_mean = mean(LPP_late, na.rm = TRUE),
-            LPP_late_sd = mean(LPP_late, na.rm = TRUE),
             EPN_left_mean = mean(EPN_left, na.rm = TRUE),
             EPN_left_sd = sd(EPN_left, na.rm = TRUE),
             EPN_right_mean = mean(EPN_right, na.rm = TRUE),
             EPN_right_sd = sd(EPN_right, na.rm = TRUE),
-            front_right_mean = mean(front_right, na.rm = TRUE),
-            front_right_sd = sd(front_right, na.rm = TRUE),
-            front_left_mean = mean(front_left, na.rm = TRUE),
-            front_left_sd = sd(front_left, na.rm = TRUE))
+            N170_right_mean = mean(N170_right, na.rm = TRUE),
+            N170_right_sd = sd(N170_right, na.rm = TRUE),
+            N170_left_mean = mean(N170_left, na.rm = TRUE),
+            N170_left_sd = sd(N170_left, na.rm = TRUE))
 ```
 
 ## Behavioral Rating Descriptive Statistics by Block
@@ -158,7 +156,7 @@ per_erp %>%
             difficulty_sd = sd(difficulty, na.rm = TRUE))
 ```
 
-# Exploration of Questionnaire Data
+## Exploration of Questionnaire Data
 
 ```{r histograms and qqplots, message = FALSE, warning = FALSE}
 meas_by_pid <- per_erp %>% 
@@ -199,7 +197,7 @@ map2(names(meas_by_pid)[-1], name, ~ measure_hist_qq_fun(.x, .y))
 
 ## Histograms and QQplots for each block with EEG Components
 
-```{r histograms and qqplots for LPP and EPN for each block, warning = FALSE, message = FALSE}
+```{r histograms and qqplots for LPP, EPN, and N170 for each block, warning = FALSE, message = FALSE}
 hist_qq_fun <- function(trial, component) {
 (per_erp %>% 
   filter(block == trial) %>% 
@@ -211,10 +209,9 @@ per_erp %>%
   ggqqplot(., component)) +
   plot_annotation(title = paste(trial, component))
 }
-eeg_by_pid
-blocks <- unique(as.character(per_erp$block))
-components <- names(per_erp)[4:9]
 
+blocks <- unique(as.character(per_erp$block))
+components <- names(per_erp)[4:8]
 map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 ```
  
@@ -223,12 +220,11 @@ Omit extreme cases indicated in the histograms and QQ plots, and regenerate hist
 ```{r examine extreme cases, warning=FALSE,message=FALSE}
 per_erp$LPP[per_erp$block == "Neg_Watch" & per_erp$LPP > 20] <- NA
 per_erp$LPP[per_erp$block == "Pos_Watch" & per_erp$LPP < -5] <- NA
-per_erp$LPP_late[per_erp$block == "Neg_Watch" & per_erp$LPP_late > 20] <- NA
 
 map(components, ~map(blocks, ~hist_qq_fun(trial = .x, component = .y), .y = .x))
 
 # write new file to workspace
-write_csv(per_erp, here("data", "created_data", "per_data_analyses_2020_5_15.csv"))
+write_csv(per_erp, here("data", "created_data", "per_data_analyses_2020_5_19.csv"))
 ```
 
 ## Histograms and QQplots for each block with behavioral ratings
@@ -246,7 +242,7 @@ per_erp %>%
   plot_annotation(title = paste(c(trial, rating)))
 }
 blocks <- unique(as.character(per_erp$block))
-ratings <- names(per_erp)[10:12]
+ratings <- names(per_erp)[9:11]
 
 map(ratings, ~map(blocks, ~hist_qq_fun(trial = .x, rating = .y), .y = .x))
 ```
