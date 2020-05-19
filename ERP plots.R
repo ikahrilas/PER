@@ -31,6 +31,12 @@ N170_avg <- c("A27", "B27")
 # front_left <- c("EXG2", "A3", "A9", "A10") # 1000 - 2000 ms
 # front_right <- c("EXG1", "B2", "B7", "B8")
 #'
+#' Omit extreme cases as indicated by histograms and QQ plots in Univarite Exploration script
+#+ Omit exteme cases
+eeg_df_mast$A25[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 800)] <- NA
+eeg_df_mast$B28[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 800)] <- NA
+eeg_df_mast$B22[eeg_df_mast$pid %in% c(206201843, 206201831) & eeg_df_mast$block %in% c("Neg_Watch", "Pos_Watch") & between(eeg_df_mast$ms, 450, 800)] <- NA
+
 #' Create plots for each component with all conditions
 #+ plot creation
 erp_plot_fun <- function(dat, cluster, comp_name, time_window_low, time_window_high) {
