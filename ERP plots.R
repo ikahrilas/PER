@@ -28,6 +28,8 @@ epn_elec_avg <- c("A27", "B27")
 N170_right <- "B26" # 150 - 190 ms
 N170_left <- "A27" # 150 - 190 ms
 N170_avg <- c("A27", "B27")
+# front_left <- c("EXG2", "A3", "A9", "A10") # 1000 - 2000 ms
+# front_right <- c("EXG1", "B2", "B7", "B8")
 #'
 #' Create plots for each component with all conditions
 #+ plot creation
