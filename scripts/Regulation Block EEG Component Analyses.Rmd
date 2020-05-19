@@ -211,7 +211,7 @@ emmeans(reg_mod_epn, pairwise ~ regulation_condition | valence_condition)
 # N170 comparisons
 reg_mod_n170 <- lmer(N170 ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
 emmeans(reg_mod_n170, pairwise ~ valence_condition | regulation_condition)
-emmeans(reg_mod_n170, pairwise ~ regulation_condition | valence_condition)
+confint(emmeans(reg_mod_n170, pairwise ~ regulation_condition | valence_condition))
 ```
 
 
