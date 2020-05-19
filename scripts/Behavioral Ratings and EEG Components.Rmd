@@ -39,9 +39,9 @@ per_dat <- per_dat %>%
   select(pid:LPP, N170, EPN, everything())
 ```
 
-## EEG and arousal ratings
+# EEG and arousal ratings
 
-Scatterplot between EEG components and arousal ratings
+## LPP and arousal ratings
 
 ```{r arousal ratings and LPP}
 # LPP
@@ -58,6 +58,7 @@ summary(mod_arousal_lpp)
 
 There is a significant relationship between LPP and arousal ratings
 
+## EPN and arousal ratings
 
 ```{r arousal ratings and EPN}
 # EPN
@@ -74,6 +75,8 @@ summary(mod_arousal_epn)
   
 There is a significant relationship between EPN and arousal ratings
 
+## N170 and arousal ratings
+
 ```{r arousal ratings and N170}
 # N170
 per_dat %>% 
@@ -89,86 +92,60 @@ summary(mod_arousal_n170)
 
 There is a significant relationship between arousal ratings and N170
 
-## EEG and valence ratings
+# EEG and valence ratings
 
-Scatterplot between LPP and valence ratings
+## LPP and valence ratings
 
 ```{r valence ratings and LPP, warning=FALSE, message=FALSE}
 # LPP
-per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>% 
-ggplot(., aes(valence, LPP, color = lateralization)) +
-  geom_jitter(width = 0.1, height = 0.1) + 
-  geom_smooth(se = FALSE) +
-  ggtitle("Valence ratings and LPP")
-# EPN
-per_erp_filter_lat  %>% 
-  filter(lateralization %in% c("left", "right")) %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>%  
-ggplot(., aes(valence, EPN, color = lateralization)) +
-  geom_jitter(width = 0.1, height = 0.1) + 
-  geom_smooth(se = FALSE) +
-  ggtitle("Valence ratings and EPN")
-# revised lpp
-per_erp_rev %>% 
+per_dat %>% 
 ggplot(., aes(valence, LPP)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(se = FALSE) +
-  ggtitle("Valence ratings and centro-parietal LPP")
-# frontal
-per_erp_filter_lat %>% 
-filter(lateralization %in% c("left", "right")) %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "right"))) %>% 
-ggplot(., aes(valence, front_avr, color = lateralization)) +
+  ggtitle("Valence ratings and LPP")
+
+mod_valence_lpp <- lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_dat)
+check_model(mod_valence_lpp, panel = FALSE)
+summary(mod_valence_lpp)
+```
+
+There is a significant polynomial relationship between valence and LPP
+
+## EPN and valence ratings
+
+```{r valence ratings and EPN}
+# EPN
+per_dat  %>% 
+ggplot(., aes(valence, EPN)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(se = FALSE) +
-  ggtitle("Valence ratings and frontal component")
-```
-
-At first glance, there does not appear to be a relationship. However, it is hypothesized that more negatively- and positively-valenced images may positively correlate with LPP. Let's test this by fitting a polynomial regression line through the scatterplot.
-
-```{r, message=FALSE, warning=FALSE}
-# LPP
-per_erp_filter_lat %>% 
-    filter(lateralization %in% c("left", "right")) %>% 
-ggplot(., aes(valence, LPP, color = lateralization)) +
-  geom_jitter(width = 0.1, height = 0.1) + 
-  stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
-  ggtitle("Valence ratings and LPP")
-# EPN
-per_erp_filter_lat %>% 
-    filter(lateralization %in% c("left", "right")) %>% 
-ggplot(., aes(valence, EPN, color = lateralization)) +
-  geom_jitter(width = 0.1, height = 0.1) + 
-  stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
   ggtitle("Valence ratings and EPN")
-# centro-parietal LPP
-per_erp_rev %>% 
-ggplot(., aes(valence, LPP)) +
-  geom_jitter(width = 0.1, height = 0.1) + 
-  stat_smooth(method = "lm", formula = y ~ poly(x, 2)) +
-  ggtitle("Valence ratings and LPP")
+
+mod_valence_epn <- lmer(EPN ~ poly(valence, 2) + (1|pid), data = per_dat)
+check_model(mod_valence_epn, panel = FALSE)
+summary(mod_valence_epn)
 ```
 
-Now, conduct a polynomial regression using MLM.
+There is a significant polynomial relationship between valence and EPN
+
+## N170 and valence ratings
 
 ```{r}
-mod_valence_lpp <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-summary(mod_valence_lpp)
-check_model(mod_valence_lpp, panel = FALSE)
-mod_valence_epn <- lmerTest::lmer(EPN ~ poly(valence, 2) * lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
-summary(mod_valence_epn) #---- Three way interaction
-mod_valence_lpp_rev <- lmerTest::lmer(LPP ~ poly(valence, 2) + (1|pid), data = per_erp_rev)
-summary(mod_valence_lpp_rev)
-front_right_valence <- lmerTest::lmer(front_avr ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "right"))
-summary(front_right_valence)
-front_left_valence <- lmerTest::lmer(front_avr ~ poly(valence, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "left"))
-summary(front_left_valence)
+# N170
+per_dat  %>% 
+ggplot(., aes(valence, N170)) +
+  geom_jitter(width = 0.1, height = 0.1) + 
+  geom_smooth(se = FALSE) +
+  ggtitle("Valence ratings and N170")
+
+mod_valence_n170 <- lmer(N170 ~ poly(valence, 1) + (1|pid), data = per_dat)
+check_model(mod_valence_n170, panel = FALSE)
+summary(mod_valence_n170)
 ```
 
-Results indicate that there is a curvilinear relationship between LPP and arousal.
+There is no significant polynomial relationship between N170 and valence, but there is a significant linear relationship, such that increases in N170 are associated with more positive images.
 
-## LPP and difficulty ratings
+# EEG and difficulty ratings
 
 Scatterplot between LPP and dificulty ratings.
 
