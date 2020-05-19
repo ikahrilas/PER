@@ -28,11 +28,13 @@ per_questionnaires <- read_csv(here("data", "created_data", "per_measures.csv"))
 ```
 
 ```{r averaging and questionnaire variable selection, include = FALSE}
-lpp_elec <- c("A25", "B28", "B22") # look at 425-1000 and 1000-2000 ms windows
-epn_elec_right <- c("B26", "B24") # 250 - 400 ms
-epn_elec_left <- c("A27", "A29") # 250 - 400 ms
-front_left <- c("EXG2", "A3", "A9", "A10") # TBD
-front_right <- c("EXG1", "B2", "B7", "B8") # TBD
+lpp_elec <- c("A25", "B28", "B22") # look at 450 - 800 ms windows
+epn_elec_right <- "B26" # 225 - 375 ms
+epn_elec_left <- "A27" # 225 - 375 ms
+epn_elec_avg <- c("A27", "B27")
+N170_right <- "B26" # 150 - 190 ms
+N170_left <- "A27" # 150 - 190 ms
+N170_avg <- c("A27", "B27")
 # select variabes from questionnaire data set for analyses
 measures_int <- per_questionnaires %>% 
   select(pid:valence, age, sex, handedness, ethnicity, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
@@ -40,32 +42,39 @@ measures_int <- per_questionnaires %>%
 
 LPP <- erp_mast_wide %>%
   select(all_of(lpp_elec), pid:prop_trials) %>% 
-  filter(between(ms, 425, 1000)) %>%
+  filter(between(ms, 450, 800)) %>%
   pivot_longer(., cols = all_of(lpp_elec), names_to = "electrode", values_to = "mv") %>% 
   group_by(pid, block) %>% 
   summarize(LPP = mean(mv, na.rm = TRUE),
             prop_trials = mean(prop_trials, na.rm = TRUE))
 
-LPP_late <- erp_mast_wide %>%
-  select(all_of(lpp_elec), pid:prop_trials) %>% 
-  filter(between(ms, 1000, 2000)) %>%
-  pivot_longer(., cols = all_of(lpp_elec), names_to = "electrode", values_to = "mv") %>% 
-  group_by(pid, block) %>% 
-  summarize(LPP_late = mean(mv, na.rm = TRUE))
-
 EPN_right <- erp_avr_wide %>%
   select(all_of(epn_elec_right), pid:prop_trials) %>% 
-  filter(between(ms, 250, 400)) %>%
+  filter(between(ms, 225, 300)) %>%
   pivot_longer(., cols = all_of(epn_elec_right), names_to = "electrode", values_to = "mv") %>% 
   group_by(pid, block) %>% 
   summarize(EPN_right = mean(mv, na.rm = TRUE))
 
 EPN_left <- erp_avr_wide %>%
   select(all_of(epn_elec_left), pid:prop_trials) %>% 
-  filter(between(ms, 250, 400)) %>%
+  filter(between(ms, 200, 300)) %>%
   pivot_longer(., cols = all_of(epn_elec_left), names_to = "electrode", values_to = "mv") %>% 
   group_by(pid, block) %>% 
   summarize(EPN_left = mean(mv, na.rm = TRUE))
+
+N170_right <- erp_avr_wide %>% 
+  select(all_of(N170_right), pid:prop_trials) %>% 
+  filter(between(ms, 150, 190)) %>% 
+  pivot_longer(., cols = all_of(N170_right), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(N170_right = mean(mv, na.rm = TRUE))
+
+N170_left <- erp_avr_wide %>% 
+  select(all_of(N170_left), pid:prop_trials) %>% 
+  filter(between(ms, 150, 190)) %>% 
+  pivot_longer(., cols = all_of(N170_left), names_to = "electrode", values_to = "mv") %>% 
+  group_by(pid, block) %>% 
+  summarize(N170_left = mean(mv, na.rm = TRUE))
 
 front_right <- erp_mast_wide %>% 
   select(all_of(front_right), pid:prop_trials) %>% 
@@ -85,9 +94,10 @@ front_left <- erp_mast_wide %>%
 Join all the tibbles together
 ```{r join all tibbles together, include=FALSE}
 #join all LPP tibbles plus right frontal
-per_erp <- left_join(LPP, LPP_late, by = c("pid", "block")) %>%
+per_erp <- left_join(LPP, EPN_right, by = c("pid", "block")) %>%
   left_join(EPN_left, by = c("pid", "block")) %>%
-  left_join(EPN_right, by = c("pid", "block")) %>%
+  left_join(N170_right, by = c("pid", "block")) %>%
+  left_join(N170_left, by = c("pid", "block")) %>% 
   left_join(front_right, by = c("pid", "block")) %>% 
   left_join(front_left, by = c("pid", "block")) %>% 
   left_join(measures_int, by = c("pid", "block"))
