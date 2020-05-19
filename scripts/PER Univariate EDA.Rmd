@@ -35,6 +35,8 @@ epn_elec_avg <- c("A27", "B27")
 N170_right <- "B26" # 150 - 190 ms
 N170_left <- "A27" # 150 - 190 ms
 N170_avg <- c("A27", "B27")
+# front_left <- c("EXG2", "A3", "A9", "A10") # 1000 - 2000 ms
+# front_right <- c("EXG1", "B2", "B7", "B8")
 # select variabes from questionnaire data set for analyses
 measures_int <- per_questionnaires %>% 
   select(pid:valence, age, sex, handedness, ethnicity, Race, political_orientation, coffee_typical_day:typical_sleep_hours,
@@ -76,19 +78,19 @@ N170_left <- erp_avr_wide %>%
   group_by(pid, block) %>% 
   summarize(N170_left = mean(mv, na.rm = TRUE))
 
-front_right <- erp_mast_wide %>% 
-  select(all_of(front_right), pid:prop_trials) %>% 
-  filter(between(ms, 1000, 2000)) %>% 
-  pivot_longer(., cols = all_of(front_right), names_to = "electrode", values_to = "mv") %>% 
-  group_by(pid, block) %>% 
-  summarize(front_right = mean(mv, na.rm = TRUE))
+# front_right <- erp_mast_wide %>% 
+#   select(all_of(front_right), pid:prop_trials) %>% 
+#   filter(between(ms, 1000, 2000)) %>% 
+#   pivot_longer(., cols = all_of(front_right), names_to = "electrode", values_to = "mv") %>% 
+#   group_by(pid, block) %>% 
+#   summarize(front_right = mean(mv, na.rm = TRUE))
   
-front_left <- erp_mast_wide %>% 
-  select(all_of(front_left), pid:prop_trials) %>% 
-  filter(between(ms, 1000, 2000)) %>% 
-  pivot_longer(., cols = all_of(front_left), names_to = "electrode", values_to = "mv") %>% 
-  group_by(pid, block) %>% 
-  summarize(front_left = mean(mv, na.rm = TRUE))
+# front_left <- erp_mast_wide %>% 
+#   select(all_of(front_left), pid:prop_trials) %>% 
+#   filter(between(ms, 1000, 2000)) %>% 
+#   pivot_longer(., cols = all_of(front_left), names_to = "electrode", values_to = "mv") %>% 
+#   group_by(pid, block) %>% 
+#   summarize(front_left = mean(mv, na.rm = TRUE))
 ```
 
 Join all the tibbles together
