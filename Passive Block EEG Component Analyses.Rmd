@@ -1,5 +1,5 @@
 ---
-title: "PER Aim One Analyses"
+title: "PER Passive Block and EEG Component Analyses"
 author: "Ian Kahrilas"
 date: "5/15/2020"
 output: pdf_document
@@ -21,7 +21,7 @@ library(patchwork)
 library(report)
 library(r2glmm)
 # load in data
-per_dat <- read_csv(here("data", "created_data", "per_data_analyses_2020_5_15.csv"))
+per_dat <- read_csv(here("data", "created_data", "per_data_analyses_2020_5_19.csv"))
 ```
 
 # Characterizing relationship between block conditions and EEG components
@@ -45,29 +45,10 @@ passive_lpp_mod <- lmer(LPP ~ block + (1|pid), data = per_dat %>% filter(block %
 check_model(passive_lpp_mod, panel = FALSE)
 summary(passive_lpp_mod)
 r2beta(passive_lpp_mod)
+report(passive_lpp_mod)
 ```
 
 There are significant differences in LPP for each passive block
-
-## Passive conditions and late LPP
-
-```{r late LPP and passive blocks}
-# box and whisker plots for late LPP and passive blocks
-per_dat %>% 
-  filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")) %>% 
-  mutate(block = fct_relevel(block, c("Neg_Watch",
-                                      "Neu_Watch",
-                                      "Pos_Watch"))) %>% # Change block order
-  ggplot(., aes(block, LPP_late)) +
-  geom_boxplot() + 
-  ggtitle("Late LPP box and whisker plots for each block")
-
-passive_late_lpp_mod <- lmer(LPP_late ~ block + (1|pid), data = per_dat %>% filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")))
-# check the quality of the model
-check_model(passive_late_lpp_mod, panel = FALSE)
-summary(passive_late_lpp_mod)
-r2beta(passive_late_lpp_mod)
-```
 
 ## Passive conditions and EPN (right and left)
 
@@ -75,41 +56,63 @@ r2beta(passive_late_lpp_mod)
 # create dataset with lateralization variable
 tmp <- per_dat %>% 
   pivot_longer(c("EPN_left", "EPN_right"), names_to = "lateralization", names_prefix = "EPN_", values_to = "EPN") %>% 
-  select(-c(front_right, front_left))
+  select(-c(N170_right, N170_left))
 tmp2 <- per_dat %>% 
-  pivot_longer(c("front_left", "front_right"), names_to = "lateralization", names_prefix = "front_", values_to = "frontal") %>% 
-  select(pid, block, frontal, lateralization)
+  pivot_longer(c("N170_left", "N170_right"), names_to = "lateralization", names_prefix = "N170_", values_to = "N170") %>% 
+  select(pid, block, N170, lateralization)
 per_dat_lat <- left_join(tmp, tmp2, by = c("pid", "block", "lateralization")) %>% 
-  select(pid:LPP_late, EPN, frontal, lateralization, everything())
+  select(pid:LPP, EPN, N170, lateralization, everything())
+
+# create bilateral EPN and N170 variable to be used in initial analyses
+per_dat <- per_dat %>% 
+  mutate(N170 = (N170_left + N170_right) / 2,
+         EPN = (EPN_left + EPN_right) / 2) %>% 
+  select(pid:LPP, N170, EPN, everything())
 
 # box and whisker plots for EPN
-per_dat_lat %>% 
+per_dat %>% 
   filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")) %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "right")), # lateralization order
-         block = fct_relevel(block, c("Neg_Watch",
+  mutate(block = fct_relevel(block, c("Neg_Watch",
                                       "Neu_Watch",
                                       "Pos_Watch"))) %>% # Change block order 
-  ggplot(., aes(block, EPN, color = lateralization)) +
+  ggplot(., aes(block, EPN)) +
   geom_boxplot() +
   ggtitle("EPN box and whisker plots for each block")
 
-
-per_erp_rev %>% 
-  ggplot(., aes(block, LPP)) + 
-  geom_boxplot() + 
-  ggtitle("Centroparietal LPP box and whisker plots for each block")
-per_erp_filter_lat %>% 
-  filter(lateralization %in% c("left", "right")) %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "right")), # lateralization order
-         block = fct_relevel(block, c("Neg_Inc", "Neg_Watch", "Neg_Dec",
-                                      "Neu_Watch",
-                                      "Pos_Dec", "Pos_Watch", "Pos_Inc"))) %>% # Change block order 
-  ggplot(., aes(block, front_avr, color = lateralization)) +
-  geom_boxplot() +
-  ggtitle("Frontal component box and whisker plots for each block") # omit midline condition
+# fit model
+passive_epn_mod <- lmer(EPN ~ block + (1|pid), data = per_dat %>% filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")))
+# check the quality of the model
+check_model(passive_epn_mod, panel = FALSE)
+summary(passive_epn_mod)
+r2beta(passive_epn_mod)
+report(passive_epn_mod)
 ```
 
+There are significant differences in EPN for each passive block
 
+## Passive conditions and N170 (right and left)
+
+```{r}
+# box and whisker plots for EPN
+per_dat %>% 
+  filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")) %>% 
+  mutate(block = fct_relevel(block, c("Neg_Watch",
+                                      "Neu_Watch",
+                                      "Pos_Watch"))) %>% # Change block order 
+  ggplot(., aes(block, N170)) +
+  geom_boxplot() +
+  ggtitle("N170 box and whisker plots for each block")
+
+# fit model
+passive_n170_mod <- lmer(N170 ~ block + (1|pid), data = per_dat %>% filter(block %in% c("Neg_Watch", "Neu_Watch", "Pos_Watch")))
+# check the quality of the model
+check_model(passive_n170_mod, panel = FALSE)
+summary(passive_n170_mod)
+r2beta(passive_n170_mod)
+report(passive_n170_mod)
+```
+
+There are significant differences in N170 for each passive block
 
 ## Contrasts between conditions
 
