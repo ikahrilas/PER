@@ -150,12 +150,14 @@ There is no significant polynomial relationship between N170 and valence, but th
 Scatterplot between LPP and dificulty ratings.
 
 ```{r difficulty ratings and LPP, warning=FALSE, message=FALSE}
-per_erp_filter_lat %>% 
-  mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
-ggplot(., aes(difficulty, LPP, color = lateralization)) +
+per_dat %>% 
+ggplot(., aes(difficulty, LPP)) +
   geom_jitter(width = 0.1, height = 0.1) + 
   geom_smooth(method = "lm", se = FALSE) +
   ggtitle("Difficulty ratings and LPP")
+
+
+
 per_erp_filter_lat %>% 
   mutate(lateralization = fct_relevel(lateralization, c("left", "avg", "right"))) %>% 
 ggplot(., aes(difficulty, EPN, color = lateralization)) +
