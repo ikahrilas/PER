@@ -1,0 +1,67 @@
+---
+title: "Descriptive Statistics"
+author: "Ian Kahrilas"
+date: "5/20/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lmerTest)
+library(here)
+library(ggpubr)
+library(car)
+library(emmeans)
+library(easystats)
+library(welchADF)
+library(moments)
+library(modelbased)
+library(patchwork)
+library(report)
+library(r2glmm)
+library(performance)
+# load in data
+per_dat <- read_csv(here("data", "created_data", "per_data_analyses_2020_5_19.csv"))
+
+# create dataset with lateralization variable
+tmp <- per_dat %>% 
+  pivot_longer(c("EPN_left", "EPN_right"), names_to = "lateralization", names_prefix = "EPN_", values_to = "EPN") %>% 
+  select(-c(N170_right, N170_left))
+tmp2 <- per_dat %>% 
+  pivot_longer(c("N170_left", "N170_right"), names_to = "lateralization", names_prefix = "N170_", values_to = "N170") %>% 
+  select(pid, block, N170, lateralization)
+per_dat_lat <- left_join(tmp, tmp2, by = c("pid", "block", "lateralization")) %>% 
+  select(pid:LPP, EPN, N170, lateralization, everything())
+
+# create bilateral EPN and N170 variable to be used in initial analyses
+per_dat <- per_dat %>% 
+  mutate(N170 = (N170_left + N170_right) / 2,
+         EPN = (EPN_left + EPN_right) / 2) %>% 
+  select(pid:LPP, N170, EPN, everything())
+```
+
+```{r descriptive statistics}
+# sex
+per_erp %>% 
+  distinct(sex) %>% 
+  ungroup() %>% 
+  count(sex)
+
+# age
+range(per_erp$age)
+mean(per_erp$age)
+sd(per_erp$age)
+
+# race
+per_erp %>% 
+  distinct(Race) %>% 
+  ungroup() %>% 
+  count(Race) %>% 
+  mutate(percentage = n / sum(n))
+
+# ethnicity
+per_erp %>% 
+  distinct(ethnicity) %>% 
+  ungroup() %>% 
+  count(ethnicity) %>% 
+  mutate(percentage = n / sum(n))
