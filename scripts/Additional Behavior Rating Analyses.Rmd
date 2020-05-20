@@ -1,0 +1,302 @@
+---
+title: "More Behavior Rating Analyses"
+author: "Ian Kahrilas"
+date: "5/20/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lmerTest)
+library(here)
+library(ggpubr)
+library(car)
+library(emmeans)
+library(easystats)
+library(welchADF)
+library(moments)
+library(modelbased)
+library(patchwork)
+library(report)
+library(r2glmm)
+library(performance)
+# load in data
+per_dat <- read_csv(here("data", "created_data", "per_data_analyses_2020_5_19.csv"))
+
+# create dataset with lateralization variable
+tmp <- per_dat %>% 
+  pivot_longer(c("EPN_left", "EPN_right"), names_to = "lateralization", names_prefix = "EPN_", values_to = "EPN") %>% 
+  select(-c(N170_right, N170_left))
+tmp2 <- per_dat %>% 
+  pivot_longer(c("N170_left", "N170_right"), names_to = "lateralization", names_prefix = "N170_", values_to = "N170") %>% 
+  select(pid, block, N170, lateralization)
+per_dat_lat <- left_join(tmp, tmp2, by = c("pid", "block", "lateralization")) %>% 
+  select(pid:LPP, EPN, N170, lateralization, everything())
+
+# create bilateral EPN and N170 variable to be used in initial analyses
+per_dat <- per_dat %>% 
+  mutate(N170 = (N170_left + N170_right) / 2,
+         EPN = (EPN_left + EPN_right) / 2) %>% 
+  select(pid:LPP, N170, EPN, everything())
+```
+
+## Valence and difficulty ratings
+
+```{r, message=FALSE, warning=FALSE}
+per_dat %>% 
+ggplot(., aes(valence, difficulty)) +
+  geom_jitter(height = 0.2, width = 0.2) + 
+  geom_smooth() +
+  ggtitle("Valence and difficulty ratings")
+
+mod_diff_val <- lmer(difficulty ~ valence + (1|pid), data = per_dat)
+summary(mod_diff_val)
+mod_diff_val_poly <- lmer(difficulty ~ poly(valence, 2) + (1|pid), data = per_dat)
+summary(mod_diff_val_poly) # the polynomial term is non-significant
+mod_diff_poisson <- glmer(difficulty ~ poly(valence, 2) + (1|pid), family = "quasipoisson", data = per_dat)
+summary(mod_diff_poisson)
+check_model(mod_diff_poisson)
+check_overdispersion(mod_diff_poisson)
+
+```
+
+There is a linear relationship between difficulty and valence, but no polynomial term.
+
+## Valence and arousal
+
+```{r, message=FALSE, warning=FALSE}
+per_dat %>% 
+ggplot(., aes(valence, arousal)) +
+  geom_jitter(width = 0.3, height = 0.3) + 
+  geom_smooth() +
+#  geom_smooth(method = "lm") +
+ # stat_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red") +
+  ggtitle("Valence and arousal ratings")
+
+mod_val_arousal <- lmer(arousal ~ poly(valence, 1) + (1|pid), data = per_dat)
+check_model(mod_val_arousal, panel = FALSE)
+mod_val_arousal_poly <- glmer(valence ~ poly(arousal, 2) + (1|pid), data = per_dat)
+check_model(mod_val_arousal_poly, panel = FALSE)
+summary(mod_val_arousal)
+report(mod_val_arousal)
+r2beta(mod_val_arousal)
+
+hist(per_dat$arousal)
+```
+
+It looks like there is a strong curvilinear relationship between the two. 
+
+```{r, message=FALSE, warning=FALSE}
+
+```
+
+The MLM analysis confirms this relationship.
+
+## Arousal and difficulty ratings
+
+```{r, message=FALSE, warning=FALSE}
+per_erp_filter_lat %>% 
+  filter(lateralization == "avg") %>% 
+ggplot(., aes(arousal, difficulty)) +
+  geom_jitter(height = 0.3, width = 0.3) + 
+  stat_smooth() +
+  ggtitle("Arousal and difficulty ratings")
+```
+
+There is perhaps a curvilinear relationship. Let's model a locally weighted (green) and polynomial regression (red) line on the plot to see what the relationship is, and how well the polynomial regression line fits compared to the locally weighted one.
+
+```{r, message=FALSE, warning=FALSE}
+ggplot(filter(per_erp_filter_lat, lateralization == "avg"), aes(arousal, difficulty)) +
+  geom_jitter(height = 0.3, width = 0.3) + 
+  geom_smooth(color = "green", alpha = 0.2) +
+  stat_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red", alpha = 0.2) +
+  ggtitle("Arousal and difficulty ratings")
+```
+
+It looks like the curvilnear relationship may be a good fit. Let's test it with an MLM analysis
+
+```{r, warning=FALSE, message=FALSE}
+mod_diff_arousal <- lmerTest::lmer(difficulty ~ poly(arousal, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
+summary(mod_diff_arousal)
+r2beta(mod_diff_arousal)
+```
+
+Indeed, the results indicated that the relationship is curvilinear.
+
+Exploration of traits and average EEG components collapsed across all groups.
+```{r trait and average eeg exploration}
+stm_lpp <- lmerTest::lmer(LPP ~ savoring_moment + lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+summary(stm_lpp)
+pa_lpp <- lmerTest::lmer(LPP ~ pos_affectivity + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right", "left")))
+summary(pa_lpp)
+stm_epn <- lmerTest::lmer(EPN ~ savoring_moment + lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+summary(stm_epn)
+pa_epn <- lmerTest::lmer(EPN ~ pos_affectivity + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
+summary(pa_epn)
+# revised lpp
+stm_lpp_rev <- lmerTest::lmer(LPP ~ savoring_moment + (1|pid), data = per_erp_rev)
+summary(stm_lpp_rev)
+pa_lpp_rev <- lmerTest::lmer(LPP ~ pos_affectivity + (1|pid), data = per_erp_rev)
+summary(pa_lpp_rev)
+# right front
+stm_front <- lmerTest::lmer(front_avr ~ savoring_moment*lateralization + (1|pid), data = per_erp_filter_lat %>%  filter(lateralization %in% c("right", "left")))
+summary(stm_front)
+
+stm_right_front <- lmerTest::lmer(front_avr ~ depression + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right")))
+summary(stm_right_front)
+```
+
+# check out arousal/valence predicted by block/personality traits
+## CONTINUE WITH THIS SECTION
+```{r}
+#---- POS_AFFECTIVITY
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+mod_arousal_pa <- lmerTest::lmer(arousal ~ block * pos_affectivity + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_pa)
+## interaction between arousal ratings and positive affecitivity
+mod_valence_pa <- lmerTest::lmer(valence ~ block * pos_affectivity + (1|pid), data = per_erp_filter_lat)
+summary(mod_valence_pa)
+## interaction between valence ratings and positive affectivity
+
+#----- SAVORING THE MOMENT
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_arousal_stm <- lmerTest::lmer(arousal ~ block * savoring_moment + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_stm)
+mod_arousal_stm <- lmerTest::lmer(valence ~ block * savoring_moment + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_stm)
+## no interactions for savoring the moment
+
+#---- DEPRESSION
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+mod_arousal_dep <- lmerTest::lmer(arousal ~ depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_dep)
+# nothing
+mod_arousal_dep_block <- lmerTest::lmer(arousal ~ block * depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_dep_block)
+# nothing
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_valence_dep <- lmerTest::lmer(valence ~ depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_valence_dep)
+mod_valence_dep_block <- lmerTest::lmer(valence ~ block*depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_valence_dep_block)
+# nothing
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_arousal_dep_block_neg <- lmerTest::lmer(arousal ~ block * depression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_dep_block_neg)
+
+#--- ERQ SUBSCALES - LOOK AT VALENCE TOO
+# reappraisal arousal
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_arousal_reappraisal <- lmerTest::lmer(arousal ~ erq_reappraisal + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_reappraisal)
+mod_arousal_reappraisal_block <- lmerTest::lmer(arousal ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_arousal_reappraisal_block)
+# nothing here
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_arousal_reappraisal_block_pos <- lmerTest::lmer(arousal ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
+summary(mod_arousal_reappraisal_block_pos)
+## interactin for erq with pos_dec vs. watch and arousal
+# reappraisal valence
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_valence_reappraisal <- lmerTest::lmer(valence ~ erq_reappraisal + (1|pid), data = per_erp_filter_lat)
+summary(mod_valence_reappraisal)
+mod_valence_reappraisal_block <- lmerTest::lmer(valence ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_arousal_reappraisal_block)
+# interaction between negative increase and erq suppression - not what would be suspected
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_valence_reappraisal_block_pos <- lmerTest::lmer(valence ~ block*erq_reappraisal + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
+summary(mod_valence_reappraisal_block_pos)
+# intearction between positive decrease and erq reappraisal
+## interactin for erq with pos_dec vs. watch and arousal
+
+# suppression - LOOK AT VALENCE???
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_arousal_reappraisal <- lmerTest::lmer(arousal ~ erq_suppression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_reappraisal)
+mod_arousal_reappraisal_block <- lmerTest::lmer(arousal ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_arousal_reappraisal_block)
+# Interaction between neg inc vs. neg watch and arousal by suppression - doesn't make a whole lot of sense
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_arousal_reappraisal_block_pos <- lmerTest::lmer(arousal ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
+summary(mod_arousal_reappraisal_block_pos)
+# nothing
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_arousal_reappraisal <- lmerTest::lmer(valence ~ erq_suppression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_reappraisal)
+mod_arousal_reappraisal_block <- lmerTest::lmer(arousal ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_arousal_reappraisal_block)
+# Interaction between neg inc vs. neg watch and arousal by suppression - doesn't make a whole lot of sense
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+mod_arousal_reappraisal_block_pos <- lmerTest::lmer(arousal ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Pos_Watch", "Pos_Inc", "Pos_Dec")))
+summary(mod_arousal_reappraisal_block_pos)
+# nothing
+
+## suppression and valence
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+mod_valence_reappraisal <- lmerTest::lmer(valence ~ erq_suppression + (1|pid), data = per_erp_filter_lat)
+summary(mod_arousal_reappraisal)
+mod_valence_reappraisal_block <- lmerTest::lmer(valence ~ block*erq_suppression + (1|pid), data = filter(per_erp_filter_lat, block %in% c("Neg_Watch", "Neg_Inc", "Neg_Dec")))
+summary(mod_valence_reappraisal_block)
+# Interaction between neg inc vs. neg watch and arousal by suppression - doesn't make a whole lot of sense
+
+#----- TMMS Subscales
+## repair
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+arousal_repair <- lmerTest::lmer(arousal ~ tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(arousal_repair)
+# nothing
+arousal_repair_block <- lmerTest::lmer(arousal ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(arousal_repair_block)
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+arousal_repair_block_neg <- lmerTest::lmer(arousal ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(arousal_repair_block_neg)
+# interactions between TMMS subscale and neg_watch vs. Neg_dec - cool
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+arousal_repair_block_pos <- lmerTest::lmer(arousal ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(arousal_repair_block_pos)
+# nothing for positive
+# look at valence 
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
+valence_repair <- lmerTest::lmer(valence ~ tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(valence_repair)
+# nothing
+valence_repair_block <- lmerTest::lmer(valence ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(valence_repair_block)
+# interactions between passive watch conditions here
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
+valence_repair_block_neg <- lmerTest::lmer(valence ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(valence_repair_block_neg)
+# interactions here between neg ince vs. neg watch and tmms repair
+per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
+valence_repair_block_pos <- lmerTest::lmer(valence ~ block*tmms_repair + (1|pid), data = per_erp_filter_lat)
+summary(valence_repair_block_pos)
+# nothing here of interest
+## attention
+## suppression
+```
+
+```{r descriptive statistics}
+# sex
+per_erp %>% 
+  distinct(sex) %>% 
+  ungroup() %>% 
+  count(sex)
+
+# age
+range(per_erp$age)
+mean(per_erp$age)
+sd(per_erp$age)
+
+# race
+per_erp %>% 
+  distinct(Race) %>% 
+  ungroup() %>% 
+  count(Race) %>% 
+  mutate(percentage = n / sum(n))
+
+# ethnicity
+per_erp %>% 
+  distinct(ethnicity) %>% 
+  ungroup() %>% 
+  count(ethnicity) %>% 
+  mutate(percentage = n / sum(n))
