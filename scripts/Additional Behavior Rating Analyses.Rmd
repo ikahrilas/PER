@@ -88,6 +88,8 @@ ggplot(., aes(valence, arousal)) +
 mod_val_arousal <- lmer(arousal ~ poly(valence, 1) + (1|pid), data = per_dat)
 check_model(mod_val_arousal, panel = FALSE)
 mod_val_arousal_poly <- glmer(valence ~ poly(arousal, 2) + (1|pid), data = per_dat)
+anova(mod_val_arousal, mod_val_arousal_poly)
+# chisquare test indicates that the polynomial model explains significantly more variance
 check_model(mod_val_arousal_poly, panel = FALSE)
 summary(mod_val_arousal_poly)
 report(mod_val_arousal)
@@ -101,23 +103,36 @@ plot(boo01, index = 3)
 boot::boot.ci(boo01, index = 3, type = "basic")
 ```
 
-It looks like there is a strong curvilinear relationship between the two. 
-
-```{r, message=FALSE, warning=FALSE}
-
-```
-
-The MLM analysis confirms this relationship.
+There is a strong curvilinear relationship between the two. 
 
 ## Arousal and difficulty ratings
 
 ```{r, message=FALSE, warning=FALSE}
-per_erp_filter_lat %>% 
-  filter(lateralization == "avg") %>% 
+per_dat %>% 
 ggplot(., aes(arousal, difficulty)) +
   geom_jitter(height = 0.3, width = 0.3) + 
   stat_smooth() +
   ggtitle("Arousal and difficulty ratings")
+
+ar_diff <- lmer(difficulty ~ arousal + (1|pid), data = per_dat)
+check_model(ar_diff)
+summary(ar_diff)
+# significant linear relationship between difficulty and arousal
+ar_diff_poly <- lmer(difficulty ~ poly(arousal, 2) + (1|pid), data = per_dat)
+check_model(ar_diff_poly)
+summary(ar_diff_poly)
+# significant polynomial relationship between difficulty and arousal
+anova(ar_diff_poly, ar_diff)
+# significant chi-square test signifies that polynomial model is a superior fit
+ar_diff_poisson <- glmer(difficulty ~ arousal + (1|pid), family = "poisson", data = per_dat)
+summary(ar_diff_poisson)
+ar_diff_poly_poisson <- glmer(difficulty ~ poly(arousal, 2) + (1|pid), family = "poisson", data = per_dat)
+summary(ar_diff_poisson)
+compare_performance(ar_diff,
+                    ar_diff_poly,
+                    ar_diff_poisson,
+                    ar_diff_poly_poisson,
+                    rank = TRUE)
 ```
 
 There is perhaps a curvilinear relationship. Let's model a locally weighted (green) and polynomial regression (red) line on the plot to see what the relationship is, and how well the polynomial regression line fits compared to the locally weighted one.
