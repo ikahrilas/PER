@@ -135,52 +135,36 @@ compare_performance(ar_diff,
                     rank = TRUE)
 ```
 
-There is perhaps a curvilinear relationship. Let's model a locally weighted (green) and polynomial regression (red) line on the plot to see what the relationship is, and how well the polynomial regression line fits compared to the locally weighted one.
+## Arousal and valence scores predicted by block
 
-```{r, message=FALSE, warning=FALSE}
-ggplot(filter(per_erp_filter_lat, lateralization == "avg"), aes(arousal, difficulty)) +
-  geom_jitter(height = 0.3, width = 0.3) + 
-  geom_smooth(color = "green", alpha = 0.2) +
-  stat_smooth(method = "lm", formula = y ~ poly(x, 2), color = "red", alpha = 0.2) +
-  ggtitle("Arousal and difficulty ratings")
-```
-
-It looks like the curvilnear relationship may be a good fit. Let's test it with an MLM analysis
-
-```{r, warning=FALSE, message=FALSE}
-mod_diff_arousal <- lmerTest::lmer(difficulty ~ poly(arousal, 2) + (1|pid), data = per_erp_filter_lat %>% filter(lateralization == "avg"))
-summary(mod_diff_arousal)
-r2beta(mod_diff_arousal)
-```
-
-Indeed, the results indicated that the relationship is curvilinear.
-
-Exploration of traits and average EEG components collapsed across all groups.
-```{r trait and average eeg exploration}
-stm_lpp <- lmerTest::lmer(LPP ~ savoring_moment + lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
-summary(stm_lpp)
-pa_lpp <- lmerTest::lmer(LPP ~ pos_affectivity + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right", "left")))
-summary(pa_lpp)
-stm_epn <- lmerTest::lmer(EPN ~ savoring_moment + lateralization + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
-summary(stm_epn)
-pa_epn <- lmerTest::lmer(EPN ~ pos_affectivity + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("left", "right")))
-summary(pa_epn)
-# revised lpp
-stm_lpp_rev <- lmerTest::lmer(LPP ~ savoring_moment + (1|pid), data = per_erp_rev)
-summary(stm_lpp_rev)
-pa_lpp_rev <- lmerTest::lmer(LPP ~ pos_affectivity + (1|pid), data = per_erp_rev)
-summary(pa_lpp_rev)
-# right front
-stm_front <- lmerTest::lmer(front_avr ~ savoring_moment*lateralization + (1|pid), data = per_erp_filter_lat %>%  filter(lateralization %in% c("right", "left")))
-summary(stm_front)
-
-stm_right_front <- lmerTest::lmer(front_avr ~ depression + (1|pid), data = per_erp_filter_lat %>% filter(lateralization %in% c("right")))
-summary(stm_right_front)
-```
-
-# check out arousal/valence predicted by block/personality traits
-## CONTINUE WITH THIS SECTION
 ```{r}
+# single emm model for all conditions
+per_dat_cond <- per_dat %>% 
+  separate(block, c("valence", "regulation"), "_") %>% 
+  mutate(valence_condition = if_else(valence == "Neg", "Negative",
+                           if_else(valence == "Pos", "Positive", "Neutral")),
+         regulation_condition = if_else(regulation == "Dec", "Decrease",
+                              if_else(regulation == "Inc", "Increase", "Watch")))
+
+# arousal comparisons
+reg_mod_ar <- lmer(arousal ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
+emmeans(reg_mod_ar, pairwise ~ valence_condition | regulation_condition)
+emmeans(reg_mod_ar, pairwise ~ regulation_condition | valence_condition)
+check_model(reg_mod_ar)
+# valence comparisons
+reg_mod_epn <- lmer(EPN ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
+emmeans(reg_mod_epn, pairwise ~ valence_condition | regulation_condition)
+emmeans(reg_mod_epn, pairwise ~ regulation_condition | valence_condition)
+
+# N170 comparisons
+reg_mod_n170 <- lmer(N170 ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
+emmeans(reg_mod_n170, pairwise ~ valence_condition | regulation_condition)
+confint(emmeans(reg_mod_n170, pairwise ~ regulation_condition | valence_condition), )
+
+```
+
+
+
 #---- POS_AFFECTIVITY
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
 mod_arousal_pa <- lmerTest::lmer(arousal ~ block * pos_affectivity + (1|pid), data = per_erp_filter_lat)
