@@ -20,6 +20,7 @@ library(patchwork)
 library(report)
 library(r2glmm)
 library(performance)
+library(bootmlm)
 # load in data
 per_dat <- read_csv(here("data", "created_data", "per_data_analyses_2020_5_19.csv"))
 
@@ -50,6 +51,7 @@ ggplot(., aes(valence, difficulty)) +
   ggtitle("Valence and difficulty ratings")
 
 mod_diff_val <- lmer(difficulty ~ valence + (1|pid), data = per_dat)
+check_model(mod_diff_val)
 summary(mod_diff_val)
 mod_diff_val_poly <- lmer(difficulty ~ poly(valence, 2) + (1|pid), data = per_dat)
 summary(mod_diff_val_poly) # the polynomial term is non-significant
@@ -77,11 +79,23 @@ mod_val_arousal <- lmer(arousal ~ poly(valence, 1) + (1|pid), data = per_dat)
 check_model(mod_val_arousal, panel = FALSE)
 mod_val_arousal_poly <- glmer(valence ~ poly(arousal, 2) + (1|pid), data = per_dat)
 check_model(mod_val_arousal_poly, panel = FALSE)
-summary(mod_val_arousal)
+summary(mod_val_arousal_poly)
 report(mod_val_arousal)
 r2beta(mod_val_arousal)
 
-hist(per_dat$arousal)
+mySumm <- function(x) {
+  c(getME(x, "beta"), sigma(x))
+}
+# Covariance preserving residual bootstrap
+boo01 <- bootstrap_mer(mod_val_arousal_poly, mySumm, type = "residual", nsim = 1000)
+# Plot bootstrap distribution of fixed effect
+library(boot)
+plot(boo01, index = 4)
+boo01
+# Get confidence interval
+boot::boot.ci(boo01, type = c("norm", "basic", "perc"))
+# BCa using influence values computed from `empinf_mer`
+boot.ci(boo01, index = 2, type = "bca", L = empinf_mer(fm01ML, mySumm, 2))
 ```
 
 It looks like there is a strong curvilinear relationship between the two. 
@@ -274,29 +288,3 @@ summary(valence_repair_block_pos)
 ## attention
 ## suppression
 ```
-
-```{r descriptive statistics}
-# sex
-per_erp %>% 
-  distinct(sex) %>% 
-  ungroup() %>% 
-  count(sex)
-
-# age
-range(per_erp$age)
-mean(per_erp$age)
-sd(per_erp$age)
-
-# race
-per_erp %>% 
-  distinct(Race) %>% 
-  ungroup() %>% 
-  count(Race) %>% 
-  mutate(percentage = n / sum(n))
-
-# ethnicity
-per_erp %>% 
-  distinct(ethnicity) %>% 
-  ungroup() %>% 
-  count(ethnicity) %>% 
-  mutate(percentage = n / sum(n))
