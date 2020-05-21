@@ -135,16 +135,16 @@ compare_performance(ar_diff,
                     rank = TRUE)
 ```
 
-## Arousal and valence scores predicted by block
+## Behavioral rating score relations with block
 
 ```{r}
 # single emm model for all conditions
 per_dat_cond <- per_dat %>% 
-  separate(block, c("valence", "regulation"), "_") %>% 
-  mutate(valence_condition = if_else(valence == "Neg", "Negative",
-                           if_else(valence == "Pos", "Positive", "Neutral")),
-         regulation_condition = if_else(regulation == "Dec", "Decrease",
-                              if_else(regulation == "Inc", "Increase", "Watch")))
+  separate(block, c("valence_condition", "regulation_condition"), "_") %>% 
+  mutate(valence_condition = if_else(valence_condition == "Neg", "Negative",
+                           if_else(valence_condition == "Pos", "Positive", "Neutral")),
+         regulation_condition = if_else(regulation_condition == "Dec", "Decrease",
+                              if_else(regulation_condition == "Inc", "Increase", "Watch")))
 
 # arousal comparisons
 reg_mod_ar <- lmer(arousal ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
@@ -152,54 +152,146 @@ emmeans(reg_mod_ar, pairwise ~ valence_condition | regulation_condition)
 emmeans(reg_mod_ar, pairwise ~ regulation_condition | valence_condition)
 check_model(reg_mod_ar)
 # valence comparisons
-reg_mod_epn <- lmer(EPN ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
-emmeans(reg_mod_epn, pairwise ~ valence_condition | regulation_condition)
-emmeans(reg_mod_epn, pairwise ~ regulation_condition | valence_condition)
+reg_mod_val <- lmer(valence ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
+emmeans(reg_mod_val, pairwise ~ valence_condition | regulation_condition)
+emmeans(reg_mod_val, pairwise ~ regulation_condition | valence_condition)
+# difficulty comparisons
+reg_mod_diff <- lmer(difficulty ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
+emmeans(reg_mod_diff, pairwise ~ valence_condition | regulation_condition)
+emmeans(reg_mod_diff, pairwise ~ regulation_condition | valence_condition)
 
-# N170 comparisons
-reg_mod_n170 <- lmer(N170 ~ valence_condition * regulation_condition + (1|pid), data = per_dat_cond)
-emmeans(reg_mod_n170, pairwise ~ valence_condition | regulation_condition)
-confint(emmeans(reg_mod_n170, pairwise ~ regulation_condition | valence_condition), )
+# visualization - arousal
+per_dat %>% 
+  ggplot(aes(block, arousal)) +
+  geom_boxplot() + 
+  ggtitle("Arousal Ratings by Block")
 
+# visualization - valence
+per_dat %>% 
+  ggplot(aes(block, valence)) +
+  geom_boxplot() +
+  ggtitle("Valence Ratings by Block")
+
+# visualization - difficulty
+per_dat %>% 
+  ggplot(aes(block, difficulty)) +
+  geom_boxplot() +
+  ggtitle("Difficulty Ratings by Block")
+```
+
+## Relations between positive affectivity and behavioral ratings
+
+````{r}
+#---- POS_AFFECTIVITY
+## arousal
+per_dat$block <- relevel(factor(per_dat$block), "Neu_Watch")
+mod_arousal_pa <- lmer(arousal ~ pos_affectivity + (1|pid), data = per_dat)
+check_model(mod_arousal_pa, panel = FALSE)
+summary(mod_arousal_pa)
+## interaction between positive affectivity and block for arousal
+mod_arousal_pa_int <- lmer(arousal ~ block * pos_affectivity + (1|pid), data = per_dat)
+check_model(mod_arousal_pa_int, panel = FALSE)
+summary(mod_arousal_pa_int)
+# There is no interaction term
+## valence
+mod_valence_pa <- lmer(valence ~ pos_affectivity + (1|pid), data = per_dat)
+check_model(mod_valence_pa, panel = FALSE)
+summary(mod_valence_pa)
+# no relationship
+## interaction between positive affectivity and block for valence
+mod_valence_pa_int <- lmer(valence ~ block * pos_affectivity + (1|pid), data = per_dat)
+check_model(mod_valence_pa_int, panel = FALSE)
+summary(mod_valence_pa_int)
+# there is an interaction term, though no direct relationship between PA and valence
+```
+
+## Relations between savoring the moment and behavioral ratings
+
+```{r}
+#---- SAVORING THE MOMENT
+## arousal
+per_dat$block <- relevel(factor(per_dat$block), "Pos_Watch")
+mod_arousal_stm <- glmer(arousal ~ savoring_moment + (1|pid), data = per_dat)
+check_model(mod_arousal_stm, panel = FALSE)
+summary(mod_arousal_stm)
+# no relationship between savoring the moment and arousal
+## interaction between positive affectivity and block for arousal
+mod_arousal_stm_int <- lmer(arousal ~ block * savoring_moment + (1|pid), data = per_dat)
+check_model(mod_arousal_stm_int, panel = FALSE)
+summary(mod_arousal_stm_int)
+# There is no interaction term
+## valence
+mod_valence_stm <- lmer(valence ~ savoring_moment + (1|pid), data = per_dat)
+check_model(mod_valence_stm, panel = FALSE)
+summary(mod_valence_stm)
+# no relationship
+## interaction between positive affectivity and block for valence
+mod_valence_stm_int <- lmer(valence ~ block * savoring_moment + (1|pid), data = per_dat)
+check_model(mod_valence_stm_int, panel = FALSE)
+summary(mod_valence_stm_int)
+# there is no interaction term
+```
+
+## For fun, take a look at depression
+
+```{r}
+#---- DEPRESSION
+# arousal
+## Neutral watch reference group
+per_dat$block <- relevel(factor(per_dat$block), "Neu_Watch")
+mod_arousal_dep <- lmer(arousal ~ depression + (1|pid), data = per_dat)
+check_model(mod_arousal_dep, panel = FALSE)
+summary(mod_arousal_dep)
+# no relationship between depression and arousal
+## interaction between depression and block for arousal
+mod_arousal_dep_int <- lmer(arousal ~ block * depression + (1|pid), data = per_dat)
+check_model(mod_arousal_dep_int, panel = FALSE)
+summary(mod_arousal_dep_int)
+# There is no interaction term
+
+# positive watch reference group
+per_dat$block <- relevel(factor(per_dat$block), "Pos_Watch")
+mod_arousal_dep_int <- lmer(arousal ~ block * depression + (1|pid), data = per_dat)
+check_model(mod_arousal_dep_int, panel = FALSE)
+summary(mod_arousal_dep_int)
+
+# negative watch reference group
+per_dat$block <- relevel(factor(per_dat$block), "Neg_Watch")
+mod_arousal_dep_int <- lmer(arousal ~ block * depression + (1|pid), data = per_dat)
+check_model(mod_arousal_dep_int, panel = FALSE)
+summary(mod_arousal_dep_int)
+
+# valence
+## Neutral watch reference group
+per_dat$block <- relevel(factor(per_dat$block), "Neu_Watch")
+mod_valence_dep <- lmer(valence ~ depression + (1|pid), data = per_dat)
+check_model(mod_valence_dep, panel = FALSE)
+summary(mod_valence_dep)
+# no relationship between depression and arousal
+## interaction between depression and block for arousal
+mod_valence_dep_int <- lmer(valence ~ block * depression + (1|pid), data = per_dat)
+check_model(mod_valence_dep_int, panel = FALSE)
+summary(mod_valence_dep_int)
+# There is no interaction term
+
+# positive watch reference group
+per_dat$block <- relevel(factor(per_dat$block), "Pos_Watch")
+mod_valence_dep_int <- lmer(valence ~ block * depression + (1|pid), data = per_dat)
+check_model(mod_arousal_dep_int, panel = FALSE)
+summary(mod_arousal_dep_int)
+
+# negative watch reference group
+per_dat$block <- relevel(factor(per_dat$block), "Neg_Watch")
+mod_valence_dep_int <- lmer(valence ~ block * depression + (1|pid), data = per_dat)
+check_model(mod_arousal_dep_int, panel = FALSE)
+summary(mod_arousal_dep_int)
 ```
 
 
 
-#---- POS_AFFECTIVITY
-per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
-mod_arousal_pa <- lmerTest::lmer(arousal ~ block * pos_affectivity + (1|pid), data = per_erp_filter_lat)
-summary(mod_arousal_pa)
-## interaction between arousal ratings and positive affecitivity
-mod_valence_pa <- lmerTest::lmer(valence ~ block * pos_affectivity + (1|pid), data = per_erp_filter_lat)
-summary(mod_valence_pa)
-## interaction between valence ratings and positive affectivity
 
-#----- SAVORING THE MOMENT
-per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
-mod_arousal_stm <- lmerTest::lmer(arousal ~ block * savoring_moment + (1|pid), data = per_erp_filter_lat)
-summary(mod_arousal_stm)
-mod_arousal_stm <- lmerTest::lmer(valence ~ block * savoring_moment + (1|pid), data = per_erp_filter_lat)
-summary(mod_arousal_stm)
-## no interactions for savoring the moment
 
-#---- DEPRESSION
-per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neu_Watch")
-mod_arousal_dep <- lmerTest::lmer(arousal ~ depression + (1|pid), data = per_erp_filter_lat)
-summary(mod_arousal_dep)
-# nothing
-mod_arousal_dep_block <- lmerTest::lmer(arousal ~ block * depression + (1|pid), data = per_erp_filter_lat)
-summary(mod_arousal_dep_block)
-# nothing
-per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Pos_Watch")
-mod_valence_dep <- lmerTest::lmer(valence ~ depression + (1|pid), data = per_erp_filter_lat)
-summary(mod_valence_dep)
-mod_valence_dep_block <- lmerTest::lmer(valence ~ block*depression + (1|pid), data = per_erp_filter_lat)
-summary(mod_valence_dep_block)
-# nothing
-per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
-mod_arousal_dep_block_neg <- lmerTest::lmer(arousal ~ block * depression + (1|pid), data = per_erp_filter_lat)
-summary(mod_arousal_dep_block_neg)
-
+```{r}
 #--- ERQ SUBSCALES - LOOK AT VALENCE TOO
 # reappraisal arousal
 per_erp_filter_lat$block <- relevel(per_erp_filter_lat$block, "Neg_Watch")
